@@ -21,3 +21,5 @@
 `chunk-level6.jsonl` 比较 libdeflate 6 下的 16,384 与 32,768 spot 块，四个代表输入各测 8/16 线程。32,768 块在八组中六组更慢，并提高 RSS，保留 16,384 默认块。变体以同一 GCC 构建的对象/静态依赖链接，仅将 `src/main.c` 的 `CHUNK_ROWS` 改为 32,768；全部比较通过。
 
 ISA-L 各级及接近输出大小下的性能见 [压缩器对照](compression-comparison.md)。`worker-compression.jsonl` 同时记录主线程参与计算的原型：8 线程四个样本均加速约 3%–8%，16 线程均回退约 5%–10%。各构建以同一套 GCC 对象/依赖链接，仅替换主线程任务分配，全部输出一致。
+
+`index-memory-failure.jsonl` 保存正式矩阵首次暴露的 T03 索引映射问题：独立 reader 将约 114 MiB 的只读名称索引重复映射，16 线程创建时耗尽 1900 MiB 地址空间。日志在 `final-level6-logs/20261025-150346-f25248ae/`。`shared-index.jsonl` 为修复后的完整 T03 对照：8 线程 RSS 393.6 MiB，16 线程 571.6 MiB，均逐字节一致。复用原始只读索引映射后，各线程仍有独立解码游标和工作缓冲。

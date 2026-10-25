@@ -2,6 +2,7 @@
 #include "reader.h"
 #include "common.h"
 #include "gzip.h"
+#include "index_mmap.h"
 #include <pthread.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -51,6 +52,7 @@ static void cleanup(void) {
         if (output[i].temp[0]) unlink(output[i].temp);
         if (!complete && output[i].published) unlink(output[i].final);
     }
+    index_mmap_release_all();
 }
 _Noreturn void fail(const char *fmt, ...) {
     va_list args;
