@@ -46,7 +46,10 @@ def compare_stream(original, compressed):
                     count = produced.value
                     expected = baseline.read(count)
                     if len(expected) != count or memcmp(output, expected, count):
-                        raise RuntimeError(f'{compressed.name}: byte mismatch in member {members} at stream offset {total}')
+                        actual = bytes(view[:count])
+                        index = next((i for i, (a, b) in enumerate(zip(expected, actual)) if a != b), min(len(expected), count))
+                        raise RuntimeError(f'{compressed.name}: byte mismatch in member {members} at stream offset {total + index}: '
+                                           f'baseline={expected[index:index+80]!r}, actual={actual[index:index+80]!r}')
                     digest_a.update(expected)
                     digest_b.update(view[:count])
                     lines += expected.count(b'\n')

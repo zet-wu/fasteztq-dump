@@ -5,6 +5,7 @@ Each independent comparison reads every gzip member to EOF and compares bytes.
 Only this development script hashes and re-reads output, outside conversion timing.
 """
 import argparse
+from concurrent.futures import ThreadPoolExecutor
 import json
 import os
 from pathlib import Path
@@ -80,9 +81,12 @@ def compare(baseline, new):
     # Keep mmap/decompression memory in a short-lived process: the long-lived
     # parent must stay small, since fork can carry its historical RSS into a
     # subsequent child's wait4 high-water statistic.
-    return [json.loads(subprocess.check_output(
-        [sys.executable, ROOT / 'scripts/compare_gzip.py', src, compressed[name]], env=ENV))
-        for name, src in sorted(originals.items())]
+    def one(item):
+        name, src = item
+        return json.loads(subprocess.check_output(
+            [sys.executable, ROOT / 'scripts/compare_gzip.py', src, compressed[name]], env=ENV))
+    with ThreadPoolExecutor(max_workers=min(3, len(originals))) as pool:
+        return list(pool.map(one, sorted(originals.items())))
 
 
 def available_memory():
@@ -166,10 +170,14 @@ def main():
                             if name != 'baseline' and max(result['kernel_maxrss_bytes'], result['sampled_tree_peak_rss_bytes']) > 2 * 1024**3:
                                 raise RuntimeError(f'{name} exceeded 2 GiB RSS')
                             measurements[name] = result
-                        for name in builds:
-                            streams = compare(folder / 'baseline', folder / name)
-                            out.write(json.dumps(dict(kind='comparison', run_id=run_id, test_id=row['test_id'], threads=threads,
-                                repeat=repeat+1, tool=name, streams=streams, byte_identical=True)) + '\n')
+                        # Conversions above stay serial. Only untimed acceptance
+                        # checks run concurrently (at most 2 builds x 3 streams).
+                        with ThreadPoolExecutor(max_workers=2) as pool:
+                            checks = {name: pool.submit(compare, folder / 'baseline', folder / name) for name in builds}
+                            for name, future in checks.items():
+                                streams = future.result()
+                                out.write(json.dumps(dict(kind='comparison', run_id=run_id, test_id=row['test_id'], threads=threads,
+                                    repeat=repeat+1, tool=name, streams=streams, byte_identical=True)) + '\n')
                         print(case, 'all streams identical', flush=True)
                     except BaseException as exc:
                         out.write(json.dumps(dict(kind='failure', case=case, error=str(exc))) + '\n')
