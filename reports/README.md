@@ -17,3 +17,7 @@
 `fastq-dump 3.2.1` 的 `tools/external/sra-dump/factory.c` 调用 `KFileMakeGzipForWrite`；ncbi-vdb 3.2.1 的 `libs/kfs/gzip.c` 使用 `Z_DEFAULT_COMPRESSION`，内置 zlib 1.2.13 将其解释为 6。libdeflate 1.22 的 API 与 README 将 6 定义为相同 zlib 风格的默认档位。
 
 `compression-calibration.jsonl` 保存 T02/T08/T12/T20 每个 FASTQ 流首、中、尾各 8 MiB 的同内容校准，两种压缩结果均解压逐字节检查。各输入上 libdeflate 6 / zlib 6 的压缩大小比为 99.87%、104.14%、98.93%、97.26%，因此采用 libdeflate 6 为默认与正式验收配置。压缩算法不同，具体字节和压缩率可有差异。此抽样只用于级别校准，全文件一致性由正式矩阵验证。复现：`python3 scripts/calibrate_compression.py`。
+
+`chunk-level6.jsonl` 比较 libdeflate 6 下的 16,384 与 32,768 spot 块，四个代表输入各测 8/16 线程。32,768 块在八组中六组更慢，并提高 RSS，保留 16,384 默认块。变体以同一 GCC 构建的对象/静态依赖链接，仅将 `src/main.c` 的 `CHUNK_ROWS` 改为 32,768；全部比较通过。
+
+ISA-L 各级及接近输出大小下的性能见 [压缩器对照](compression-comparison.md)。`worker-compression.jsonl` 同时记录主线程参与计算的原型：8 线程四个样本均加速约 3%–8%，16 线程均回退约 5%–10%。各构建以同一套 GCC 对象/依赖链接，仅替换主线程任务分配，全部输出一致。

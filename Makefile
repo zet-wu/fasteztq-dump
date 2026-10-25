@@ -49,3 +49,6 @@ $(BUILD)/make_fixture: tests/make_fixture.c $(BUILD)/vdb/lib/libncbi-wvdb.a
 check: all $(BUILD)/make_fixture
 	python3 -m unittest discover -s tests -p 'test_compare.py'
 	python3 tests/test_conversion.py --build $(BUILD)
+
+$(BUILD)/compression_probe: tests/compression_probe.c $(BUILD)/gzip.o $(ISAL_LIB) $(DEFLATE_LIB) $(VDB_LIB)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -Isrc $(INCLUDES) $< $(BUILD)/gzip.o $(ISAL_LIB) $(DEFLATE_LIB) $(VDB_LIB) -o $@

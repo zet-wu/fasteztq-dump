@@ -103,6 +103,8 @@ def main():
     ap.add_argument('--report', default='reports/benchmark.jsonl')
     ap.add_argument('--compressor', choices=['libdeflate', 'isal'], default='libdeflate')
     ap.add_argument('--level', type=int, default=6)
+    ap.add_argument('--compression-configs', nargs='*', default=[], metavar='NAME=COMPRESSOR:LEVEL',
+                    help='override compression per build for controlled comparisons')
     args = ap.parse_args()
     if not 0 <= args.level <= (12 if args.compressor == 'libdeflate' else 3):
         ap.error('level outside compressor range')
@@ -114,6 +116,14 @@ def main():
         if len(rows) != len(set(args.ids)):
             ap.error('unknown test id')
     builds = {name: (ROOT / binary).resolve() for name, binary in (s.split('=', 1) for s in args.builds)}
+    configs = {name: (args.compressor, args.level) for name in builds}
+    for spec in args.compression_configs:
+        name, value = spec.split('=', 1)
+        compressor, level = value.split(':', 1)
+        level = int(level)
+        if name not in builds or compressor not in ('libdeflate', 'isal') or not 0 <= level <= (12 if compressor == 'libdeflate' else 3):
+            ap.error(f'invalid compression override {spec}')
+        configs[name] = compressor, level
     for binary in [BASELINE, *builds.values()]:
         if not binary.is_file():
             ap.error(f'missing binary {binary}')
@@ -160,8 +170,9 @@ def main():
                             if name == 'baseline':
                                 argv = [BASELINE, src, '--split-files', '-e', threads, '-O', dest, '-t', folder / 'baseline-tmp']
                             else:
+                                compressor, level = configs[name]
                                 argv = [builds[name], src, '-e', threads, '-O', dest, '--memory-mib', 1900,
-                                        '--compressor', args.compressor, '--level', args.level]
+                                        '--compressor', compressor, '--level', level]
                             result = measure(argv, logs / f'{case}-{name}.log', tmp_root)
                             result.update(kind='measurement', run_id=run_id, test_id=row['test_id'], run=row['run'],
                                 input_format=row['format'], input_md5=row['md5'], input_sha256=row['sha256'],
@@ -169,7 +180,7 @@ def main():
                                 source_commit=version, source_dirty=dirty, cache='input pre-read before each timed run; warm page cache',
                                 output_format='FASTQ' if name == 'baseline' else 'gzip FASTQ')
                             if name != 'baseline':
-                                result.update(compressor=args.compressor, compression_level=args.level)
+                                result.update(compressor=compressor, compression_level=level)
                             out.write(json.dumps(result) + '\n')
                             print(case, name, f"{result['elapsed_seconds']:.3f}s", f"RSS={result['kernel_maxrss_bytes']/MIB:.1f}MiB", f"threads={result['peak_os_threads']}", flush=True)
                             if result['returncode']:
