@@ -12,11 +12,10 @@ typedef struct {
 } Spot;
 
 typedef struct Reader Reader;
-Reader *reader_open(const char *path);
+/* model carries the input structure already inspected by the first reader. */
+Reader *reader_open(const char *path, const Reader *model);
 void reader_close(Reader *r);
 void reader_range(Reader *r, int64_t *first, uint64_t *count);
 bool reader_has_name(Reader *r);
 void reader_spot(Reader *r, int64_t row, Spot *spot);
-_Noreturn void fail(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
-void *allocate(size_t n);
 #endif

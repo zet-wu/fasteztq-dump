@@ -1,5 +1,6 @@
 #define _GNU_SOURCE
 #include "reader.h"
+#include "common.h"
 #include <libdeflate.h>
 #include <pthread.h>
 #include <stdarg.h>
@@ -212,7 +213,7 @@ int main(int argc, char **argv) {
     pthread_t *tids = allocate(state.workers * sizeof *tids);
     if (!workers) fail("out of memory");
     for (unsigned i = 0; i < state.workers; ++i) {
-        workers[i].reader = reader_open(path);
+        workers[i].reader = reader_open(path, i ? workers[0].reader : NULL);
         workers[i].index = i;
         workers[i].compressor = libdeflate_alloc_compressor(level);
         if (!workers[i].compressor) fail("allocate compressor");
