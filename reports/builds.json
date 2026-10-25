@@ -5,16 +5,17 @@
       "command": [
         "make",
         "-j2",
-        "BUILD=build/gcc-final",
+        "BUILD=build/gcc-release",
         "JOBS=16"
       ],
       "compiler": "gcc (Debian 12.2.0-14+deb12u1) 12.2.0\nCopyright (C) 2022 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n",
       "cxx_compiler": "g++ (Debian 12.2.0-14+deb12u1) 12.2.0\nCopyright (C) 2022 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n",
-      "executable": "/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/gcc-final/fasteztq-dump",
+      "executable": "/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/gcc-release/fasteztq-dump",
       "app_flags": "-O3 -DNDEBUG -std=c11 -Wall -Wextra -Wpedantic -pthread",
       "link_libraries": [
         "libncbi-vdb.a",
         "libisal.a",
+        "libdeflate.a",
         "stdc++",
         "m",
         "dl",
@@ -26,13 +27,28 @@
         "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
       ],
       "build_log": "build-logs/gcc.log.gz",
-      "vdb_compile_commands": "build-logs/gcc-vdb-commands.json.gz"
+      "vdb_compile_commands": "build-logs/gcc-vdb-commands.json.gz",
+      "libdeflate_cmake_flags": [
+        "-DCMAKE_BUILD_TYPE=Release",
+        "-DLIBDEFLATE_BUILD_SHARED_LIB=OFF",
+        "-DLIBDEFLATE_BUILD_GZIP=OFF",
+        "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+      ],
+      "libdeflate_compile_commands": "build-logs/gcc-libdeflate-commands.json.gz",
+      "post_build_check_command": [
+        "make",
+        "check",
+        "BUILD=build/gcc-release",
+        "JOBS=16"
+      ],
+      "version": "fasteztq-dump 0.4.0; ncbi-vdb 3.2.1; libdeflate 1.22; ISA-L 2.31.0",
+      "dynamic_libraries": "\tlinux-vdso.so.1 (0x00007ffc2de49000)\n\tlibstdc++.so.6 => /usr/lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f4cc3e00000)\n\tlibm.so.6 => /usr/lib/x86_64-linux-gnu/libm.so.6 (0x00007f4cc483b000)\n\tlibc.so.6 => /usr/lib/x86_64-linux-gnu/libc.so.6 (0x00007f4cc401e000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007f4cc491d000)\n\tlibgcc_s.so.1 => /usr/lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f4cc481b000)\n"
     },
     "aocc": {
       "command": [
         "make",
         "-j2",
-        "BUILD=build/aocc-final",
+        "BUILD=build/aocc-release",
         "CC=/opt/AMD/aocc-compiler-5.0.0/bin/clang",
         "CXX=/opt/AMD/aocc-compiler-5.0.0/bin/clang++",
         "CFLAGS=-O3 -DNDEBUG -march=znver2",
@@ -41,11 +57,12 @@
       ],
       "compiler": "AMD clang version 17.0.6 (CLANG: AOCC_5.0.0-Build#1377 2024_09_24)\nTarget: x86_64-unknown-linux-gnu\nThread model: posix\nInstalledDir: /opt/AMD/aocc-compiler-5.0.0/bin\n",
       "cxx_compiler": "AMD clang version 17.0.6 (CLANG: AOCC_5.0.0-Build#1377 2024_09_24)\nTarget: x86_64-unknown-linux-gnu\nThread model: posix\nInstalledDir: /opt/AMD/aocc-compiler-5.0.0/bin\n",
-      "executable": "/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-final/fasteztq-dump",
+      "executable": "/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/fasteztq-dump",
       "app_flags": "-O3 -DNDEBUG -march=znver2 -std=c11 -Wall -Wextra -Wpedantic -pthread",
       "link_libraries": [
         "libncbi-vdb.a",
         "libisal.a",
+        "libdeflate.a",
         "stdc++",
         "m",
         "dl",
@@ -59,12 +76,32 @@
         "-DCMAKE_CXX_FLAGS=-march=znver2"
       ],
       "build_log": "build-logs/aocc.log.gz",
-      "vdb_compile_commands": "build-logs/aocc-vdb-commands.json.gz"
+      "vdb_compile_commands": "build-logs/aocc-vdb-commands.json.gz",
+      "libdeflate_cmake_flags": [
+        "-DCMAKE_BUILD_TYPE=Release",
+        "-DLIBDEFLATE_BUILD_SHARED_LIB=OFF",
+        "-DLIBDEFLATE_BUILD_GZIP=OFF",
+        "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+      ],
+      "libdeflate_compile_commands": "build-logs/aocc-libdeflate-commands.json.gz",
+      "post_build_check_command": [
+        "make",
+        "check",
+        "BUILD=build/aocc-release",
+        "CC=/opt/AMD/aocc-compiler-5.0.0/bin/clang",
+        "CXX=/opt/AMD/aocc-compiler-5.0.0/bin/clang++",
+        "CFLAGS=-O3 -DNDEBUG -march=znver2",
+        "VDB_FLAGS=-march=znver2",
+        "JOBS=16"
+      ],
+      "version": "fasteztq-dump 0.4.0; ncbi-vdb 3.2.1; libdeflate 1.22; ISA-L 2.31.0",
+      "dynamic_libraries": "\tlinux-vdso.so.1 (0x00007ffc535fe000)\n\tlibstdc++.so.6 => /usr/lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007efe3da00000)\n\tlibm.so.6 => /usr/lib/x86_64-linux-gnu/libm.so.6 (0x00007efe3e3be000)\n\tlibc.so.6 => /usr/lib/x86_64-linux-gnu/libc.so.6 (0x00007efe3dc1e000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007efe3e4a0000)\n\tlibgcc_s.so.1 => /usr/lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007efe3e39e000)\n"
     }
   },
   "dependencies": {
     "ncbi-vdb": "3.2.1, official tagged source; bundled codecs; Release static build",
-    "isa-l": "2.31.0, official tagged source; static Makefile.unx build, independent object directories, runtime instruction dispatch"
+    "isa-l": "2.31.0, official tagged source; static Makefile.unx build, independent object directories, runtime instruction dispatch",
+    "libdeflate": "1.22, official tagged source; static CMake Release build with explicit CFLAGS, independent compiler directories"
   },
   "baseline": {
     "path": "/public/bio-informatic-software/sratoolkit.3.2.1-ubuntu64/bin/fasterq-dump",
@@ -73,5 +110,6 @@
   "checker": {
     "libdeflate": "libdeflate0:amd64\t1.14-1",
     "python": "Python 3.13.2"
-  }
+  },
+  "source_core_commit": "8c3773d5de23556f369303d3a68c46d3f829ba63"
 }

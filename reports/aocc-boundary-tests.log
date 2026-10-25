@@ -1,13 +1,373 @@
+/opt/AMD/aocc-compiler-5.0.0/bin/clang  -O3 -DNDEBUG -march=znver2 -std=c11 -Wall -Wextra -Wpedantic -pthread -Ideps/ncbi-vdb-3.2.1/interfaces -Ideps/ncbi-vdb-3.2.1/interfaces/cc/gcc/x86_64 -Ideps/isa-l-2.31.0/include -Ideps/libdeflate-1.22 -c src/main.c -o build/aocc-release/main.o
+/opt/AMD/aocc-compiler-5.0.0/bin/clang  -o build/aocc-release/fasteztq-dump build/aocc-release/main.o build/aocc-release/reader.o build/aocc-release/gzip.o build/aocc-release/vdb/lib/libncbi-vdb.a build/aocc-release/isal/libisal.a build/aocc-release/libdeflate/libdeflate.a -lstdc++ -lm -ldl -pthread
+cmake --build build/aocc-release/vdb --target ncbi-wvdb -j 16
+gmake[1]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[2]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[3]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+[  0%] Building C object libs/wgsxf/CMakeFiles/wwgsxf.dir/build_scaffold.c.o
+gmake[4]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+[  1%] Built target zstd
+[  1%] Building C object libs/axf/CMakeFiles/waxf.dir/ref-tbl-sub-select.c.o
+[  2%] Built target cloud
+gmake[4]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+[  2%] Built target ncbi-bam
+[  2%] Building C object libs/align/CMakeFiles/align-writer.dir/dna-reverse-cmpl.c.o
+[  2%] Built target align-access
+[  2%] Built target mbedx509
+[  4%] Built target bz2
+[  7%] Built target z
+gmake[4]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+[  9%] Built target kfg
+gmake[4]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+[  9%] Building C object libs/wgsxf/CMakeFiles/wwgsxf.dir/build_read_type.c.o
+[ 12%] Built target mbedtls
+[ 12%] Built target kfc
+gmake[4]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+[ 14%] Building C object libs/align/CMakeFiles/align-writer.dir/reader-cmn.c.o
+[ 14%] Building C object libs/axf/CMakeFiles/waxf.dir/ref-restore-read.c.o
+gmake[4]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+[ 14%] Building C object libs/axf/CMakeFiles/waxf.dir/align-restore-read.c.o
+[ 14%] Building C object libs/align/CMakeFiles/align-writer.dir/reference-cmn.c.o
+[ 14%] Building C object libs/align/CMakeFiles/align-writer.dir/reader-refseq.c.o
+[ 14%] Building C object libs/axf/CMakeFiles/waxf.dir/raw-restore-read.c.o
+gmake[4]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+[ 14%] Building C object libs/align/CMakeFiles/align-writer.dir/reader-wgs.c.o
+[ 21%] Built target kfs
+[ 30%] Built target kdb
+gmake[4]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+[ 42%] Built target mbedcrypto
+[ 45%] Built target judy
+[ 45%] Building C object libs/align/CMakeFiles/align-writer.dir/refseq-mgr.c.o
+[ 45%] Building C object libs/axf/CMakeFiles/waxf.dir/raw-restore-qual.c.o
+[ 45%] Building C object libs/axf/CMakeFiles/waxf.dir/seq-restore-read.c.o
+[ 54%] Built target klib
+gmake[4]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+[ 56%] Building C object libs/axf/CMakeFiles/waxf.dir/seq-restore-linkage-group.c.o
+[ 59%] Built target kns
+gmake[4]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+[ 59%] Building C object libs/axf/CMakeFiles/waxf.dir/seq-construct-read.c.o
+gmake[4]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+[ 59%] Building C object libs/align/CMakeFiles/align-writer.dir/writer-cmn.c.o
+[ 59%] Building C object libs/align/CMakeFiles/align-writer.dir/writer-refseq.c.o
+[ 60%] Built target kproc
+[ 60%] Building C object libs/align/CMakeFiles/align-writer.dir/writer-alignment.c.o
+gmake[4]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+[ 60%] Building C object libs/axf/CMakeFiles/waxf.dir/cigar.c.o
+[ 60%] Building C object libs/axf/CMakeFiles/waxf.dir/project_read_from_sequence.c.o
+[ 61%] Built target kq
+gmake[4]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+[ 61%] Linking C static library ../../ilib/libwwgsxf.a
+[ 61%] Building C object libs/align/CMakeFiles/align-writer.dir/writer-sequence.c.o
+gmake[4]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+[ 64%] Built target krypto
+gmake[4]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+[ 66%] Building C object libs/align/CMakeFiles/align-writer.dir/writer-ref.c.o
+gmake[4]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+[ 66%] Building C object libs/sra/CMakeFiles/wsradb.dir/sramgr-cmn.c.o
+gmake[4]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+[ 69%] Built target schema
+gmake[4]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+[ 70%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/untyped.c.o
+[ 70%] Building C object libs/vdb/CMakeFiles/wvdb.dir/dbmgr-cmn.c.o
+gmake[4]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+[ 70%] Built target wwgsxf
+gmake[4]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/deps/ncbi-vdb-3.2.1/libs/axf/cigar.c:2227:17: warning: variable 'has_mismatch' set but not used [-Wunused-but-set-variable]
+ 2227 |     bool const *has_mismatch [ 70%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/v0-decompress-init.c.o
+      = argv [ 0 ] . u . data . base;
+      |                 ^
+/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/deps/ncbi-vdb-3.2.1/libs/axf/cigar.c:2303:17: warning: variable 'has_mismatch' set but not used [-Wunused-but-set-variable]
+ 2303 |     bool const *has_mismatch       = argv [ 0 ] . u . data . base;
+      |                 ^
+[ 71%] Building C object libs/vxf/CMakeFiles/wvxf.dir/ceil.c.o
+[ 71%] Building C object libs/axf/CMakeFiles/waxf.dir/not-my-row.c.o
+[ 74%] Built target vfs
+[ 74%] Building C object libs/vdb/CMakeFiles/wvdb.dir/schema-tok.c.o
+[ 74%] Building C object libs/axf/CMakeFiles/waxf.dir/template-len.c.o
+[ 74%] Building C object libs/axf/CMakeFiles/waxf.dir/get-sam-flags.c.o
+[ 74%] Building C object libs/axf/CMakeFiles/waxf.dir/align-ref-pos.c.o
+[ 74%] Building C object libs/axf/CMakeFiles/waxf.dir/align-ref-name.c.o
+[ 74%] Building C object libs/sra/CMakeFiles/wsradb.dir/sratbl-cmn.c.o
+[ 74%] Building C object libs/vdb/CMakeFiles/wvdb.dir/schema-parse.c.o
+[ 76%] Building C object libs/vdb/CMakeFiles/wvdb.dir/schema-type.c.o
+[ 77%] Building C object libs/axf/CMakeFiles/waxf.dir/align-ref-seq-id.c.o
+[ 77%] Building C object libs/vdb/CMakeFiles/wvdb.dir/schema-func.c.o
+[ 77%] Building C object libs/vdb/CMakeFiles/wvdb.dir/schema-prod.c.o
+[ 77%] Building C object libs/sra/CMakeFiles/wsradb.dir/types.c.o
+[ 77%] Building C object libs/sra/CMakeFiles/wsradb.dir/sracol.c.o
+[ 77%] Building C object libs/sra/CMakeFiles/wsradb.dir/sracache.c.o
+[ 77%] Building C object libs/align/CMakeFiles/align-writer.dir/writer-reference.c.o
+[ 77%] Building C object libs/vxf/CMakeFiles/wvxf.dir/clip.c.o
+[ 77%] Building C object libs/vxf/CMakeFiles/wvxf.dir/cut.c.o
+[ 77%] Building C object libs/vxf/CMakeFiles/wvxf.dir/echo.c.o
+[ 77%] Building C object libs/vxf/CMakeFiles/wvxf.dir/exists.c.o
+[ 77%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/v0-decompress.c.o
+[ 77%] Building C object libs/vdb/CMakeFiles/wvdb.dir/schema-expr.c.o
+[ 77%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/v0-funcs.c.o
+[ 77%] Building C object libs/sra/CMakeFiles/wsradb.dir/wsramgr.c.o
+[ 77%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/bio-start.c.o
+[ 77%] Building C object libs/sra/CMakeFiles/wsradb.dir/wsratbl.c.o
+[ 77%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/dynamic-454-read-descriptor.c.o
+[ 77%] Building C object libs/vxf/CMakeFiles/wvxf.dir/floor.c.o
+[ 77%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/format-spot-name.c.o
+[ 77%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/extract-name_coord.c.o
+[ 77%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/tokenize-spot_name-454.c.o
+[ 78%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/tokenize-spot_name-illumina.c.o
+[ 78%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/tokenize-spot_name-abi.c.o
+[ 78%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/tokenize-spot_name-helicos.c.o
+[ 78%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/tokenize-spot_name-ion-torrent.c.o
+[ 78%] Building C object libs/axf/CMakeFiles/waxf.dir/align-local_ref_id.c.o
+[ 78%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/tokenize-spot_name-generic-fastq.c.o
+[ 78%] Building C object libs/vxf/CMakeFiles/wvxf.dir/paste.c.o
+[ 78%] Building C object libs/axf/CMakeFiles/waxf.dir/align-local_ref_start.c.o
+[ 78%] Linking C static library ../../ilib/libwsradb.a
+[ 78%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/color-from-dna.c.o
+[ 78%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/dna-from-color.c.o
+[ 78%] Building C object libs/axf/CMakeFiles/waxf.dir/generate-mismatch-qual.c.o
+[ 78%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/use-rna-flag.c.o
+gmake[4]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+[ 78%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/spot-desc.c.o
+[ 80%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/read-desc.c.o
+[ 80%] Built target wsradb
+[ 80%] Building C object libs/vxf/CMakeFiles/wvxf.dir/round.c.o
+[ 80%] Building C object libs/vxf/CMakeFiles/wvxf.dir/trunc.c.o
+[ 81%] Building C object libs/vxf/CMakeFiles/wvxf.dir/unzip.c.o
+[ 81%] Building C object libs/vxf/CMakeFiles/wvxf.dir/map.c.o
+/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/deps/ncbi-vdb-3.2.1/libs/sraxf/read-desc.c:49:34: warning: variable 'read_flt' set but not used [-Wunused-but-set-variable]
+   49 |     const INSDC_SRA_read_filter *read_flt = argv[4].u.data.base;
+      |                                  ^
+[ 81%] Building C object libs/vxf/CMakeFiles/wvxf.dir/funzip.c.o
+1 warning generated.
+[ 81%] Building C object libs/axf/CMakeFiles/waxf.dir/mismatch-restore-qual.c.o
+[ 81%] Building C object libs/vxf/CMakeFiles/wvxf.dir/vec-sum.c.o
+[ 81%] Building C object libs/vxf/CMakeFiles/wvxf.dir/min.c.o
+[ 81%] Building C object libs/vxf/CMakeFiles/wvxf.dir/max.c.o
+[ 81%] Building C object libs/vxf/CMakeFiles/wvxf.dir/rldecode.c.o
+[ 81%] Building C object libs/vdb/CMakeFiles/wvdb.dir/schema-eval.c.o
+[ 81%] Building C object libs/vxf/CMakeFiles/wvxf.dir/pack.c.o
+[ 81%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/rotate.c.o
+[ 81%] Building C object libs/vdb/CMakeFiles/wvdb.dir/schema-tbl.c.o
+[ 81%] Building C object libs/axf/CMakeFiles/waxf.dir/ref-preserve_qual.c.o
+[ 81%] Building C object libs/vxf/CMakeFiles/wvxf.dir/unpack.c.o
+[ 81%] Building C object libs/vdb/CMakeFiles/wvdb.dir/schema-view.c.o
+[ 83%] Building C object libs/vxf/CMakeFiles/wvxf.dir/izip.c.o
+/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/deps/ncbi-vdb-3.2.1/libs/axf/ref-preserve_qual.c:367:20: warning: unused variable 'max_seq_len' [-Wunused-variable]
+  367 |     uint32_t const max_seq_len = ( ( uint32_t const * )argv[ 2 ].u.data.base )[ argv[ 2 ].u.data.first_elem ];
+      |                    ^~~~~~~~~~~
+/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/deps/ncbi-vdb-3.2.1/libs/vdb/schema-tbl.c:1153:26: warning: variable 'cmp_bits' set but not used [-Wunused-but-set-variable]
+ 1153 |     uint32_t stage_bits, cmp_bits = 0;
+      |                          ^
+[ 83%] Building C object libs/vxf/CMakeFiles/wvxf.dir/iunzip.c.o
+[ 83%] Building C object libs/vdb/CMakeFiles/wvdb.dir/schema-db.c.o
+[ 83%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/swap.c.o
+[ 83%] Building C object libs/axf/CMakeFiles/waxf.dir/ref-tbl.c.o
+1 warning generated.
+2 warnings generated.
+[ 83%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/denormalize.c.o
+[ 83%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/normalize.c.o
+[ 83%] Building C object libs/vdb/CMakeFiles/wvdb.dir/schema-dump.c.o
+[ 84%] Building C object libs/vdb/CMakeFiles/wvdb.dir/schema-int.c.o
+[ 84%] Building C object libs/axf/CMakeFiles/waxf.dir/make-cmp-read_desc.c.o
+[ 85%] Building C object libs/axf/CMakeFiles/waxf.dir/get_mate_align_ids.c.o
+[ 85%] Building C object libs/vxf/CMakeFiles/wvxf.dir/diff.c.o
+[ 85%] Building C object libs/vxf/CMakeFiles/wvxf.dir/sum.c.o
+[ 85%] Building C object libs/vxf/CMakeFiles/wvxf.dir/bit_or.c.o
+[ 85%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/qual4_decode.c.o
+[ 85%] Building C object libs/vdb/CMakeFiles/wvdb.dir/schema.c.o
+[ 85%] Building C object libs/axf/CMakeFiles/waxf.dir/range-list.c.o
+[ 85%] Building C object libs/axf/CMakeFiles/waxf.dir/refseq.c.o
+[ 85%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/read-seg-from-readn.c.o
+[ 85%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/rewrite-spot-name.c.o
+[ 85%] Building C object libs/vdb/CMakeFiles/wvdb.dir/linker-int.c.o
+[ 85%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/make-position.c.o
+[ 85%] Linking C static library ../../ilib/libalign-writer.a
+[ 85%] Building C object libs/vdb/CMakeFiles/wvdb.dir/linker-cmn.c.o
+[ 85%] Building C object libs/vdb/CMakeFiles/wvdb.dir/database-cmn.c.o
+gmake[4]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+[ 85%] Built target align-writer
+[ 85%] Building C object libs/vdb/CMakeFiles/wvdb.dir/database-depend.c.o
+[ 87%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/process-position.c.o
+1 warning generated.
+[ 87%] Building C object libs/vdb/CMakeFiles/wvdb.dir/database-load.c.o
+[ 87%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/extract-coordinates.c.o
+[ 87%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/fpcodec.c.o
+/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/deps/ncbi-vdb-3.2.1/libs/vdb/database-cmn.c:1514:27: warning: unused variable 'db_schema' [-Wunused-variable]
+ 1514 |         const SDatabase * db_schema = self -> sdb;
+      |                           ^~~~~~~~~
+[ 87%] Building C object libs/vxf/CMakeFiles/wvxf.dir/trim.c.o
+[ 87%] Building C object libs/vdb/CMakeFiles/wvdb.dir/table-cmn.c.o
+[ 87%] Building C object libs/vxf/CMakeFiles/wvxf.dir/deriv.c.o
+[ 87%] Building C object libs/vxf/CMakeFiles/wvxf.dir/integral.c.o
+[ 87%] Building C object libs/vdb/CMakeFiles/wvdb.dir/table-load.c.o
+[ 87%] Building C object libs/axf/CMakeFiles/waxf.dir/wgs.c.o
+[ 87%] Building C object libs/axf/CMakeFiles/waxf.dir/refseq-stats.c.o
+[ 87%] Building C object libs/axf/CMakeFiles/waxf.dir/restore-read.c.o
+[ 88%] Building C object libs/vdb/CMakeFiles/wvdb.dir/cursor-cmn.c.o
+[ 90%] Building C object libs/vxf/CMakeFiles/wvxf.dir/integral_0.c.o
+/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/deps/ncbi-vdb-3.2.1/libs/axf/wgs.c:139:10: warning: variable 'rc' set but not used [-Wunused-but-set-variable]
+  139 |     rc_t rc = KLockAcquire(self->lock);
+      |          ^
+1 warning generated.
+[ 90%] Building C object libs/vdb/CMakeFiles/wvdb.dir/column-cmn.c.o
+[ 90%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/index_lookup.c.o
+[ 90%] Building C object libs/vxf/CMakeFiles/wvxf.dir/delta.c.o
+[ 90%] Building C object libs/vxf/CMakeFiles/wvxf.dir/undelta.c.o
+[ 90%] Building C object libs/vdb/CMakeFiles/wvdb.dir/prod-cmn.c.o
+[ 90%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/varloc.c.o
+1 warning generated.
+[ 90%] Building C object libs/vdb/CMakeFiles/wvdb.dir/prod-expr.c.o
+[ 90%] Building C object libs/vdb/CMakeFiles/wvdb.dir/prod-func.c.o
+[ 90%] Building C object libs/vdb/CMakeFiles/wvdb.dir/phys-cmn.c.o
+[ 90%] Building C object libs/vdb/CMakeFiles/wvdb.dir/phys-load.c.o
+[ 90%] Building C object libs/vdb/CMakeFiles/wvdb.dir/blob.c.o
+[ 90%] Building C object libs/vdb/CMakeFiles/wvdb.dir/blob-headers.c.o
+[ 90%] Building C object libs/vxf/CMakeFiles/wvxf.dir/add-row-id.c.o
+[ 90%] Building C object libs/vxf/CMakeFiles/wvxf.dir/subtract-row-id.c.o
+[ 91%] Building C object libs/vdb/CMakeFiles/wvdb.dir/row-id.c.o
+[ 91%] Linking C static library ../../ilib/libwaxf.a
+[ 91%] Building C object libs/vxf/CMakeFiles/wvxf.dir/irzip.c.o
+gmake[4]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+[ 91%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/spot-filter.c.o
+[ 91%] Built target waxf
+[ 91%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/syn_quality.c.o
+[ 91%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/extract-name_fmt.c.o
+[ 92%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/extract-spot_name.c.o
+[ 92%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/stats.c.o
+[ 92%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/stats_quality.c.o
+[ 92%] Building C object libs/vxf/CMakeFiles/wvxf.dir/rand_4na_2na.c.o
+/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/deps/ncbi-vdb-3.2.1/libs/sraxf/spot-filter.c:65:44: warning: unused variable 'read' [-Wunused-variable]
+   65 |     BIND_COLUMN(COL_READ       ,  uint8_t, read  ); ///< 4NA or x2na or 2na
+      |                                            ^~~~
+/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/deps/ncbi-vdb-3.2.1/libs/sraxf/spot-filter.c:44:62: note: expanded from macro 'BIND_COLUMN'
+   44 | #define BIND_COLUMN(ELEM, DTYPE, POINTER) DTYPE const *const POINTER = SAFE_BASE(ELEM, DTYPE)
+      |                                                              ^~~~~~~
+[ 92%] Building C object libs/vdb/CMakeFiles/wvdb.dir/row-len.c.o
+[ 92%] Building C object libs/vxf/CMakeFiles/wvxf.dir/outlier-encoder.c.o
+[ 92%] Building C object libs/vxf/CMakeFiles/wvxf.dir/outlier-decoder.c.o
+[ 92%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/qual4_encode.c.o
+[ 94%] Building C object libs/vxf/CMakeFiles/wvxf.dir/simple-sub-select.c.o
+[ 94%] Building C object libs/sraxf/CMakeFiles/wsraxf.dir/set-rna-flag.c.o
+[ 94%] Building C object libs/vxf/CMakeFiles/wvxf.dir/bunzip.c.o
+[ 94%] Building C object libs/vxf/CMakeFiles/wvxf.dir/extract_token.c.o
+[ 94%] Building C object libs/vxf/CMakeFiles/wvxf.dir/strtonum.c.o
+[ 94%] Building C object libs/vxf/CMakeFiles/wvxf.dir/sprintf.c.o
+[ 94%] Building C object libs/vxf/CMakeFiles/wvxf.dir/wgs-tokenize-accession.c.o
+1 warning generated.
+[ 94%] Building C object libs/vdb/CMakeFiles/wvdb.dir/fixed-row-len.c.o
+[ 94%] Building C object libs/vdb/CMakeFiles/wvdb.dir/merge.c.o
+[ 94%] Building C object libs/vxf/CMakeFiles/wvxf.dir/lower-case-tech-reads.c.o
+[ 94%] Building C object libs/vdb/CMakeFiles/wvdb.dir/split.c.o
+[ 94%] Building C object libs/vxf/CMakeFiles/wvxf.dir/zip.c.o
+[ 94%] Building C object libs/vxf/CMakeFiles/wvxf.dir/unzstd.c.o
+[ 95%] Building C object libs/vxf/CMakeFiles/wvxf.dir/bzip.c.o
+[ 95%] Building C object libs/vdb/CMakeFiles/wvdb.dir/compare.c.o
+[ 95%] Building C object libs/vxf/CMakeFiles/wvxf.dir/fzip.c.o
+[ 95%] Building C object libs/vdb/CMakeFiles/wvdb.dir/meta-read.c.o
+[ 95%] Building C object libs/vdb/CMakeFiles/wvdb.dir/meta-value.c.o
+[ 95%] Building C object libs/vxf/CMakeFiles/wvxf.dir/rlencode.c.o
+[ 95%] Building C object libs/vxf/CMakeFiles/wvxf.dir/checksum.c.o
+[ 97%] Building C object libs/vdb/CMakeFiles/wvdb.dir/meta-attr-read.c.o
+[ 97%] Building C object libs/vxf/CMakeFiles/wvxf.dir/zstd.c.o
+[ 97%] Building C object libs/vdb/CMakeFiles/wvdb.dir/cast.c.o
+[ 97%] Building C object libs/vdb/CMakeFiles/wvdb.dir/range-validate.c.o
+[ 97%] Building C object libs/vdb/CMakeFiles/wvdb.dir/parameter-read.c.o
+[ 97%] Building C object libs/vdb/CMakeFiles/wvdb.dir/redimension.c.o
+[ 97%] Building C object libs/vdb/CMakeFiles/wvdb.dir/index_project.c.o
+[ 97%] Building C object libs/vdb/CMakeFiles/wvdb.dir/index_lookup.c.o
+[ 97%] Building C object libs/vdb/CMakeFiles/wvdb.dir/transpose.c.o
+[ 97%] Building C object libs/vdb/CMakeFiles/wvdb.dir/delta_average.c.o
+[ 98%] Building C object libs/vdb/CMakeFiles/wvdb.dir/report-vdb.c.o
+[ 98%] Building C object libs/vdb/CMakeFiles/wvdb.dir/bytecode.c.o
+[ 98%] Building C object libs/vdb/CMakeFiles/wvdb.dir/view.c.o
+[ 98%] Building C object libs/vdb/CMakeFiles/wvdb.dir/cursor-view.c.o
+[ 98%] Building C object libs/vdb/CMakeFiles/wvdb.dir/cursor-table.c.o
+[ 98%] Building C object libs/vdb/CMakeFiles/wvdb.dir/wdbmgr.c.o
+[ 98%] Building C object libs/vdb/CMakeFiles/wvdb.dir/wlinker.c.o
+[ 98%] Building C object libs/vdb/CMakeFiles/wvdb.dir/wdatabase.c.o
+[ 98%] Building C object libs/vdb/CMakeFiles/wvdb.dir/wtable.c.o
+[100%] Building C object libs/vdb/CMakeFiles/wvdb.dir/wcursor.c.o
+[100%] Building C object libs/vdb/CMakeFiles/wvdb.dir/wcolumn.c.o
+[100%] Building C object libs/vdb/CMakeFiles/wvdb.dir/wprod.c.o
+[100%] Building C object libs/vdb/CMakeFiles/wvdb.dir/wphys.c.o
+[100%] Building C object libs/vdb/CMakeFiles/wvdb.dir/meta-write.c.o
+[100%] Building C object libs/vdb/CMakeFiles/wvdb.dir/meta-attr-write.c.o
+[100%] Building C object libs/vdb/CMakeFiles/wvdb.dir/meta-append.c.o
+[100%] Building C object libs/vdb/CMakeFiles/wvdb.dir/index_insert.c.o
+[100%] Linking C static library ../../ilib/libwvdb.a
+gmake[4]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+[100%] Built target wvdb
+[100%] Linking C static library ../../ilib/libwsraxf.a
+gmake[4]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+[100%] Built target wsraxf
+[100%] Linking C static library ../../ilib/libwvxf.a
+gmake[4]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+[100%] Built target wvxf
+gmake[4]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[4]: Entering directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+[100%] Linking CXX static library ../../lib/libncbi-wvdb.a
+gmake[4]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+[100%] Built target ncbi-wvdb
+gmake[3]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[2]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+gmake[1]: Leaving directory '/home/wangzeyu/wangzeyu-nvme1/fasteztq-dump/build/aocc-release/vdb'
+/opt/AMD/aocc-compiler-5.0.0/bin/clang  -O3 -DNDEBUG -march=znver2 -Ideps/ncbi-vdb-3.2.1/interfaces -Ideps/ncbi-vdb-3.2.1/interfaces/cc/gcc/x86_64 -Ideps/isa-l-2.31.0/include -Ideps/libdeflate-1.22 tests/make_fixture.c build/aocc-release/vdb/lib/libncbi-wvdb.a -lstdc++ -lm -ldl -pthread -o build/aocc-release/make_fixture
+python3 -m unittest discover -s tests -p 'test_compare.py'
 ........
 ----------------------------------------------------------------------
 Ran 8 tests in 0.112s
 
 OK
-python3 tests/test_conversion.py --build build/aocc-final
+python3 tests/test_conversion.py --build build/aocc-release
 paired OK
 mixed OK
 no-name OK
 technical OK
+late-technical OK
 empty OK
 three OK
 bad-quality OK
