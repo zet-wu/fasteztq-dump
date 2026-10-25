@@ -1,0 +1,23 @@
+/opt/AMD/aocc-compiler-5.0.0/bin/clang  -O3 -DNDEBUG -march=znver2 -Ideps/ncbi-vdb-3.2.1/interfaces -Ideps/ncbi-vdb-3.2.1/interfaces/cc/gcc/x86_64 -Ideps/isa-l-2.31.0/include -Ideps/libdeflate-1.22 -Ideps/ncbi-vdb-3.2.1/libs/kfs/unix tests/make_fixture.c build/aocc-release/vdb/lib/libncbi-wvdb.a -lstdc++ -lm -ldl -pthread -o build/aocc-release/make_fixture
+/opt/AMD/aocc-compiler-5.0.0/bin/clang  -O3 -DNDEBUG -march=znver2 -std=c11 -Wall -Wextra -Wpedantic -pthread -Ideps/ncbi-vdb-3.2.1/interfaces -Ideps/ncbi-vdb-3.2.1/interfaces/cc/gcc/x86_64 -Ideps/isa-l-2.31.0/include -Ideps/libdeflate-1.22 -Ideps/ncbi-vdb-3.2.1/libs/kfs/unix -c src/main.c -o build/aocc-release/main.o
+/opt/AMD/aocc-compiler-5.0.0/bin/clang  -O3 -DNDEBUG -march=znver2 -std=c11 -Wall -Wextra -Wpedantic -pthread -Ideps/ncbi-vdb-3.2.1/interfaces -Ideps/ncbi-vdb-3.2.1/interfaces/cc/gcc/x86_64 -Ideps/isa-l-2.31.0/include -Ideps/libdeflate-1.22 -Ideps/ncbi-vdb-3.2.1/libs/kfs/unix -c src/gzip.c -o build/aocc-release/gzip.o
+/opt/AMD/aocc-compiler-5.0.0/bin/clang  -Wl,--wrap=KRIndexMakeRead,--wrap=KMMapMakeRead -o build/aocc-release/fasteztq-dump build/aocc-release/main.o build/aocc-release/reader.o build/aocc-release/gzip.o build/aocc-release/index_mmap.o build/aocc-release/vdb/lib/libncbi-vdb.a build/aocc-release/isal/libisal.a build/aocc-release/libdeflate/libdeflate.a -lstdc++ -lm -ldl -pthread
+python3 -m unittest discover -s tests -p 'test_compare.py'
+........
+----------------------------------------------------------------------
+Ran 8 tests in 0.103s
+
+OK
+python3 tests/test_conversion.py --build build/aocc-release
+shared index mappings, offsets, sizes and ownership OK
+paired OK
+mixed OK
+no-name OK
+technical OK
+late-technical OK
+empty OK
+three OK
+bad-quality OK
+reference OK
+long read blocks above 64 MiB OK
+renamed format, symlink naming, gzip levels, truncated input, and write failure OK

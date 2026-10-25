@@ -30,6 +30,16 @@ class CompareTest(unittest.TestCase):
         self.gz.write_bytes(gzip.compress(self.a) + gzip.compress(b'') + gzip.compress(self.b))
         self.assertEqual(compare_stream(self.raw, self.gz)['gzip_members'], 3)
 
+    def test_member_larger_than_initial_buffer(self):
+        count = 64 * 1024**2 // len(self.a) + 1
+        data = self.a * count
+        self.raw.write_bytes(data)
+        self.gz.write_bytes(gzip.compress(data, compresslevel=1))
+        result = compare_stream(self.raw, self.gz)
+        self.assertEqual(result['bytes'], len(data))
+        self.assertEqual(result['records'], count)
+        self.assertEqual(result['gzip_members'], 1)
+
     def test_damaged_second_member_crc(self):
         data = bytearray(self.good)
         data[-8] ^= 1
