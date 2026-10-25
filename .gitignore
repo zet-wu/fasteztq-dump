@@ -5,3 +5,6 @@ tests/metadata
 tests/SHA256SUMS
 tests/TEST_DATA.md
 .codex
+/deps/
+/build/
+__pycache__/
