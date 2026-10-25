@@ -55,7 +55,8 @@ def main():
     destination = ROOT / 'reports/large-samples-results.csv'
     with destination.open('w') as f:
         writer = csv.DictWriter(f, fieldnames=list(output[0])); writer.writeheader(); writer.writerows(output)
-    old_meta = {r['test_id']: r for r in json.loads((ROOT / 'tests/metadata/verification.json').read_text())['files']}
+    old_records = [json.loads(line) for line in (ROOT / 'reports/final-level6.jsonl').read_text().splitlines()]
+    old_meta = {r['test_id']: {'bytes': r['input_bytes']} for r in old_records if r['kind'] == 'measurement'}
     old = [r for r in csv.DictReader((ROOT / 'reports/final-results.csv').open()) if r['tool'] == 'gcc' and r['threads'] == '8']
     old.sort(key=lambda r: old_meta[r['test_id']]['bytes'])
     ranks = lambda xs: [sorted(xs).index(x) + 1 for x in xs]
@@ -87,6 +88,23 @@ def main():
         'python3 scripts/benchmark.py --metadata reports/large-samples-verification.json \\\n  --threads 8 16 --repeats 3 --builds gcc=build/gcc/fasteztq-dump \\\n  --compressor libdeflate --level 6 --report reports/large-recheck.jsonl',
         'python3 scripts/summarize_large_benchmark.py', '```', '',
         '`summarize_large_benchmark.py` 汇总已保存的 `large-level6.jsonl`；复测请选择新 JSONL 路径。来源清单、下载元数据和启动命令分别见 [样本选择](large-samples-selection.json)、[输入验证](large-samples-verification.json)、[测量命令](large-samples-command.json)。', '']
+    conclusions = []
+    for threads in [8, 16]:
+        group = [r for r in output if r['threads'] == threads]
+        slower = sum(r['speedup'] < 1 for r in group)
+        ratio = sum(r['baseline_seconds'] for r in group) / sum(r['new_seconds'] for r in group)
+        conclusions.append(f'{threads} 线程下，{slower}/3 个大样本相对未压缩基线回退；三样本中位耗时合计的速度比为 {ratio:.3f}×。')
+    conclusions += ['', '旧 20 输入的 16 线程加速结论适用于其约 0.027–1.20 GB 输入范围；本次大样本结果应独立报告。新程序计时包含默认 6 级压缩，源文件大小与质量分布、索引结构、解码量和压缩工作量同时变化，本测试不能单独量化每个因素的因果贡献。', '',
+        '| 样本 | SRA GB | 解压后 FASTQ GB | gzip GB |', '|---|---:|---:|---:|']
+    conclusions += [f"| {r['run']} | {r['input_gb']:.3f} | {r['fastq_gb']:.3f} | {r['gzip_gb']:.3f} |" for r in output if r['threads'] == 8]
+    at = lines.index('## 运行时内存行为')
+    lines[at:at] = ['## 结果解释', '', *conclusions, '']
+    snapshot = json.loads((ROOT / 'reports/large-samples-logs/large-index-t16-memory.json').read_text())
+    status = dict(line.split(':', 1) for line in snapshot['status'].splitlines())
+    virtual = int(status['VmSize'].split()[0]) / 1024**2
+    resident = int(status['VmRSS'].split()[0]) / 1024
+    at = lines.index('## 复现')
+    lines[at:at] = [f'10 GB 样本 16 线程的一次运行快照中，虚拟地址空间为 {virtual:.3f} GiB，而同一时刻 RSS 为 {resident:.1f} MiB（这是中途快照，完整运行峰值见结果表）。其地址空间已超过旧的 2048 MiB 最大设置；地址空间上限与实际驻留内存并不等价。证据见 [大索引快照](large-samples-logs/large-index-t16-memory.json)。', '']
     (ROOT / 'reports/large-samples.md').write_text('\n'.join(lines))
     print(json.dumps(output, indent=2))
 
