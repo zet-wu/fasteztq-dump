@@ -1,8 +1,10 @@
 # 开发测量
 
-最终结果见 [完整验收表](final-results.md) 和 [CSV](final-results.csv)，原始数据为 [final-level6.jsonl](final-level6.jsonl)。固定配置为 libdeflate 1.22、6 级，20 输入 × 8/16 线程 × GCC/AOCC，每项三次。360 次转换及 240 次全文件比较全部通过，涉及 360 个输出流、174,972 个 gzip 成员和累计 912.21 GB 的解压内容；峰值总 RSS 812.9 MiB。
+新增大样本结果见 [大样本报告](large-samples.md) 和 [CSV](large-samples-results.csv)，原始数据为 [large-level6.jsonl](large-level6.jsonl)。6.06、10.00、19.92 GB 三个 Normalized SRA 在 GCC、默认 libdeflate 6 下各测 8/16 线程三轮；36 次转换、18 次完整比较、36 个输出流全部通过，累计比对 1.35 TB。最高 RSS 1756.9 MiB。三个样本在两档线程数下均慢于未压缩基线，累计速度比分别为 0.513× / 0.706×。生产程序按实际需求分配内存，开发测试独立记录 RSS。样本清单、IPv6 aria2 下载记录及超过旧地址空间限制的运行证据见报告链接。
 
-速度目标在 16 线程下对全部输入达成，累计耗时比约 1.71×。8 线程累计耗时基本持平，GCC 有 6 个输入回退、AOCC 有 8 个，逐项列在结果表中。所有性能对照均为基线 FASTQ 与新工具 gzip FASTQ。
+20 个约 0.027–1.20 GB 输入的结果见 [完整验收表](final-results.md) 和 [CSV](final-results.csv)，原始数据为 [final-level6.jsonl](final-level6.jsonl)。固定配置为 libdeflate 1.22、6 级，20 输入 × 8/16 线程 × GCC/AOCC，每项三次。360 次转换及 240 次全文件比较全部通过，涉及 360 个输出流、174,972 个 gzip 成员和累计 912.21 GB 的解压内容；峰值总 RSS 812.9 MiB。
+
+该 20 输入矩阵的速度目标在 16 线程下对全部输入达成，累计耗时比约 1.71×。8 线程累计耗时基本持平，GCC 有 6 个输入回退、AOCC 有 8 个，逐项列在结果表中。所有性能对照均为基线 FASTQ 与新工具 gzip FASTQ。
 
 `prototype.jsonl` 保存最小实现的代表样本全量转换和比较结果。每行 `measurement` 为一轮真实执行；`comparison` 为计时结束后的全流字节比较。日志位于对应 `*-logs/` 子目录。
 

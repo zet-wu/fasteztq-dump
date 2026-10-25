@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Summarize the three full large-file experiments and the original size trend."""
+import argparse
 import csv
 import json
 from pathlib import Path
@@ -9,7 +10,14 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def main():
-    records = [json.loads(line) for line in (ROOT / 'reports/large-level6.jsonl').read_text().splitlines()]
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--report', default='reports/large-level6.jsonl')
+    parser.add_argument('--output-prefix', default='reports/large-samples')
+    args = parser.parse_args()
+    source = ROOT / args.report
+    prefix = ROOT / args.output_prefix
+    prefix.parent.mkdir(parents=True, exist_ok=True)
+    records = [json.loads(line) for line in source.read_text().splitlines()]
     measurements = [r for r in records if r['kind'] == 'measurement']
     comparisons = [r for r in records if r['kind'] == 'comparison']
     expected = {(case, threads, repeat, tool) for case in ['L01', 'L02', 'L03']
@@ -51,8 +59,8 @@ def main():
                 baseline_cpu_cores=statistics.median((r['user_seconds'] + r['system_seconds']) / r['elapsed_seconds'] for r in groups['baseline']),
                 fastq_gb=sum(s['bytes'] for s in checked) / 1e9,
                 gzip_gb=sum(s['gzip_bytes'] for s in checked) / 1e9,
-                peak_tmpfs_gib=max(r['tmpfs_peak_additional_bytes'] for r in groups['baseline']) / 1024**3))
-    destination = ROOT / 'reports/large-samples-results.csv'
+                baseline_peak_tmpfs_additional_gib=max(r['tmpfs_peak_additional_bytes'] for r in groups['baseline']) / 1024**3))
+    destination = prefix.with_name(prefix.name + '-results.csv')
     with destination.open('w') as f:
         writer = csv.DictWriter(f, fieldnames=list(output[0])); writer.writeheader(); writer.writerows(output)
     old_records = [json.loads(line) for line in (ROOT / 'reports/final-level6.jsonl').read_text().splitlines()]
@@ -67,7 +75,7 @@ def main():
         f'原 20 输入矩阵中，GCC 在 8 线程的 6 个回退输入恰为 SRA 最大的 6 个。SRA 字节数与速度比的 Spearman 相关系数为 {rho:.3f}。速度比定义为原版耗时 / 新程序耗时，大于 1 表示新程序更快。', '',
         '| 输入 | 格式 | SRA GB | 速度比 |', '|---|---|---:|---:|']
     lines += [f"| {r['test_id']} / {r['run']} | {r['input_format']} | {old_meta[r['test_id']]['bytes']/1e9:.3f} | {float(r['speedup']):.3f}× |" for r in regressions]
-    lines += ['', '这是所选输入中的相关性。输入格式、质量值、读长、NAME 索引及输出量也同时变化，不能仅凭相关性断定 SRA 大小是原因。小文件的速度比受到启动开销影响；完整大文件测试用于检查持续吞吐。', '',
+    lines += ['', 'AOCC 的 8 线程回退还包括 T04、T14，速度比分别约 0.993×、0.995×，两者接近持平，应与明显回退分开看。\n\n这是所选输入中的相关性。输入格式、质量值、读长、NAME 索引及输出量也同时变化，不能仅凭相关性断定 SRA 大小是原因。小文件的速度比受到启动开销影响；完整大文件测试用于检查持续吞吐。', '',
         '## 样品与方法', '',
         '从 `/home/wangzeyu/wangzeyu-nvme1/coexpress-evolution/rnaseq/cohorts/` 样品清单选取三个较大 Normalized SRA，保留原始质量值。6 GB 样本复用既有缓存；10/20 GB 样本下载至当前项目 `tests/data/large/`，原始文件均保留。', '',
         '| 输入 | 物种 | SRA GB | spot 数 | 抽样读长 |', '|---|---|---:|---:|---|']
@@ -79,22 +87,22 @@ def main():
         '## 完整大样本结果', '',
         '| 样本 | 线程 | 原版 s | 新程序 s | 速度比 | 新 RSS MiB | 原版 RSS MiB |', '|---|---:|---:|---:|---:|---:|---:|']
     lines += [f"| {r['run']} | {r['threads']} | {r['baseline_seconds']:.3f} | {r['new_seconds']:.3f} | {r['speedup']:.3f}× | {r['new_rss_mib']:.1f} | {r['baseline_rss_mib']:.1f} |" for r in output]
-    lines += ['', '表中耗时为三轮中位数；每轮范围、CPU 占用、输出字节数和 tmpfs 使用量见 [CSV](large-samples-results.csv)，逐次测量及完整比较见 [JSONL](large-level6.jsonl)。', '',
+    lines += ['', f'表中耗时为三轮中位数；每轮范围、CPU 占用、输出字节数和 tmpfs 使用增量见 [CSV]({destination.name})，逐次测量及完整比较见 [JSONL]({source.name})。', '',
         f"共 {len(measurements)} 次转换、{len(comparisons)} 次完整比较、{len(streams)} 个输出流，逐字节一致并验证全部 gzip 成员 CRC/ISIZE；累计比较 {sum(s['bytes'] for s in streams)/1e12:.3f} TB。新程序观测最大 RSS 为 {max(r['new_rss_mib'] for r in output):.1f} MiB。", '',
         '## 运行时内存行为', '',
         '生产程序通过固定数量的工作槽位、16384 spot 分块、有序背压、缓冲复用和只读索引共享控制内存增长。缓冲按当前块需求扩容，实际占用取决于线程数、读长、解码数据块和输入索引。实际分配失败仍报告错误并清理临时输出。ISA-L 的单次输入/输出使用其接口规定的 32 位长度范围。', '',
         '本次移除了 `RLIMIT_AS`、`--memory-mib` 和每流 64 MiB 固定上限；开发脚本独立记录 RSS 是否达到 2 GiB 优化目标，完整运行及比对保留超出目标的测量。实际运行的 `/proc/PID/limits` 证据见 [运行限制](large-samples-logs/runtime-limits.json)。GCC/AOCC 边界测试和超过 64 MiB 的完整 gzip 成员测试均通过。', '',
         '## 复现', '', '```sh',
         'python3 scripts/benchmark.py --metadata reports/large-samples-verification.json \\\n  --threads 8 16 --repeats 3 --builds gcc=build/gcc/fasteztq-dump \\\n  --compressor libdeflate --level 6 --report reports/large-recheck.jsonl',
-        'python3 scripts/summarize_large_benchmark.py', '```', '',
-        '`summarize_large_benchmark.py` 汇总已保存的 `large-level6.jsonl`；复测请选择新 JSONL 路径。来源清单、下载元数据和启动命令分别见 [样本选择](large-samples-selection.json)、[输入验证](large-samples-verification.json)、[测量命令](large-samples-command.json)。', '']
+        'python3 scripts/summarize_large_benchmark.py --report reports/large-recheck.jsonl --output-prefix reports/large-recheck', '```', '',
+        '`summarize_large_benchmark.py` 默认汇总已保存的 `large-level6.jsonl`；复测时通过参数选择新 JSONL 与报告路径。来源清单、下载元数据和启动命令分别见 [样本选择](large-samples-selection.json)、[输入验证](large-samples-verification.json)、[测量命令](large-samples-command.json)。', '']
     conclusions = []
     for threads in [8, 16]:
         group = [r for r in output if r['threads'] == threads]
         slower = sum(r['speedup'] < 1 for r in group)
         ratio = sum(r['baseline_seconds'] for r in group) / sum(r['new_seconds'] for r in group)
         conclusions.append(f'{threads} 线程下，{slower}/3 个大样本相对未压缩基线回退；三样本中位耗时合计的速度比为 {ratio:.3f}×。')
-    conclusions += ['', '旧 20 输入的 16 线程加速结论适用于其约 0.027–1.20 GB 输入范围；本次大样本结果应独立报告。新程序计时包含默认 6 级压缩，源文件大小与质量分布、索引结构、解码量和压缩工作量同时变化，本测试不能单独量化每个因素的因果贡献。', '',
+    conclusions += ['', '原 20 个约 0.027–1.20 GB 输入的 16 线程结果属于该测试矩阵；本次大样本结果应独立报告。新程序计时包含默认 6 级压缩，源文件大小与质量分布、索引结构、解码量和压缩工作量同时变化，本测试不能单独量化每个因素的因果贡献。', '',
         '| 样本 | SRA GB | 解压后 FASTQ GB | gzip GB |', '|---|---:|---:|---:|']
     conclusions += [f"| {r['run']} | {r['input_gb']:.3f} | {r['fastq_gb']:.3f} | {r['gzip_gb']:.3f} |" for r in output if r['threads'] == 8]
     at = lines.index('## 运行时内存行为')
@@ -105,7 +113,9 @@ def main():
     resident = int(status['VmRSS'].split()[0]) / 1024
     at = lines.index('## 复现')
     lines[at:at] = [f'10 GB 样本 16 线程的一次运行快照中，虚拟地址空间为 {virtual:.3f} GiB，而同一时刻 RSS 为 {resident:.1f} MiB（这是中途快照，完整运行峰值见结果表）。其地址空间已超过旧的 2048 MiB 最大设置；地址空间上限与实际驻留内存并不等价。证据见 [大索引快照](large-samples-logs/large-index-t16-memory.json)。', '']
-    (ROOT / 'reports/large-samples.md').write_text('\n'.join(lines))
+    at = lines.index('## 复现')
+    lines[at:at] = ['10 GB 样本的 `tbl/SEQUENCE/idx/skey` 大小为 1,165,766,820 字节（约 1111.8 MiB）；20 GB 样本没有对应的 `skey` 索引。这与两者约 1.1 GiB 的 RSS 差异相符。线程共享只读索引映射，驻留的原始索引页仍计入 RSS。归档目录证据见 [10 GB 归档](large-samples-logs/SRR30352331-archive.txt) 和 [20 GB 归档](large-samples-logs/SRR9158204-archive.txt)。', '']
+    prefix.with_suffix('.md').write_text('\n'.join(lines))
     print(json.dumps(output, indent=2))
 
 
