@@ -1,0 +1,48 @@
+T03, 16 threads, before mapping reuse
+Identical read-only input region mappings: 15
+Bytes per region: 117231616
+reader 0
+VmSize:	  208764 kB
+VmRSS:	   68940 kB
+reader 1
+VmSize:	  324584 kB
+VmRSS:	   83320 kB
+reader 2
+VmSize:	  440404 kB
+VmRSS:	   87080 kB
+reader 3
+VmSize:	  556228 kB
+VmRSS:	   88832 kB
+reader 4
+VmSize:	  672048 kB
+VmRSS:	   90508 kB
+reader 5
+VmSize:	  787868 kB
+VmRSS:	   91848 kB
+reader 6
+VmSize:	  903688 kB
+VmRSS:	   93180 kB
+reader 7
+VmSize:	 1019372 kB
+VmRSS:	   94268 kB
+reader 8
+VmSize:	 1135192 kB
+VmRSS:	   95640 kB
+reader 9
+VmSize:	 1251012 kB
+VmRSS:	   96968 kB
+reader 10
+VmSize:	 1366832 kB
+VmRSS:	   98048 kB
+reader 11
+VmSize:	 1482652 kB
+VmRSS:	   99460 kB
+reader 12
+VmSize:	 1598472 kB
+VmRSS:	  101020 kB
+reader 13
+VmSize:	 1714292 kB
+VmRSS:	  102304 kB
+reader 14
+VmSize:	 1830120 kB
+VmRSS:	  103392 kB

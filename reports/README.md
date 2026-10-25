@@ -22,4 +22,4 @@
 
 ISA-L 各级及接近输出大小下的性能见 [压缩器对照](compression-comparison.md)。`worker-compression.jsonl` 同时记录主线程参与计算的原型：8 线程四个样本均加速约 3%–8%，16 线程均回退约 5%–10%。各构建以同一套 GCC 对象/依赖链接，仅替换主线程任务分配，全部输出一致。
 
-`index-memory-failure.jsonl` 保存正式矩阵首次暴露的 T03 索引映射问题：独立 reader 将约 114 MiB 的只读名称索引重复映射，16 线程创建时耗尽 1900 MiB 地址空间。日志在 `final-level6-logs/20261025-150346-f25248ae/`。`shared-index.jsonl` 为修复后的完整 T03 对照：8 线程 RSS 393.6 MiB，16 线程 571.6 MiB，均逐字节一致。复用原始只读索引映射后，各线程仍有独立解码游标和工作缓冲。
+`index-memory-failure.jsonl` 保存正式矩阵首次暴露的 T03 索引映射问题：独立 reader 将111.8 MiB 的只读名称索引重复映射，16 线程创建时耗尽 1900 MiB 地址空间。日志在 `final-level6-logs/20261025-150346-f25248ae/`。`shared-index.jsonl` 为修复后的完整 T03 对照：8 线程 RSS 393.6 MiB，16 线程 571.6 MiB，均逐字节一致。复用原始只读索引映射后，各线程仍有独立解码游标和工作缓冲。

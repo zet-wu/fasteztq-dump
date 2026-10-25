@@ -42,7 +42,10 @@
         "JOBS=16"
       ],
       "version": "fasteztq-dump 0.4.0; ncbi-vdb 3.2.1; libdeflate 1.22; ISA-L 2.31.0",
-      "dynamic_libraries": "\tlinux-vdso.so.1 (0x00007ffc2de49000)\n\tlibstdc++.so.6 => /usr/lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f4cc3e00000)\n\tlibm.so.6 => /usr/lib/x86_64-linux-gnu/libm.so.6 (0x00007f4cc483b000)\n\tlibc.so.6 => /usr/lib/x86_64-linux-gnu/libc.so.6 (0x00007f4cc401e000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007f4cc491d000)\n\tlibgcc_s.so.1 => /usr/lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f4cc481b000)\n"
+      "dynamic_libraries": "\tlinux-vdso.so.1 (0x00007ffd09f88000)\n\tlibstdc++.so.6 => /usr/lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007fd5a8e00000)\n\tlibm.so.6 => /usr/lib/x86_64-linux-gnu/libm.so.6 (0x00007fd5a980b000)\n\tlibc.so.6 => /usr/lib/x86_64-linux-gnu/libc.so.6 (0x00007fd5a901e000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007fd5a98ed000)\n\tlibgcc_s.so.1 => /usr/lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007fd5a97eb000)\n",
+      "link_options": [
+        "-Wl,--wrap=KRIndexMakeRead,--wrap=KMMapMakeRead"
+      ]
     },
     "aocc": {
       "command": [
@@ -95,7 +98,10 @@
         "JOBS=16"
       ],
       "version": "fasteztq-dump 0.4.0; ncbi-vdb 3.2.1; libdeflate 1.22; ISA-L 2.31.0",
-      "dynamic_libraries": "\tlinux-vdso.so.1 (0x00007ffc535fe000)\n\tlibstdc++.so.6 => /usr/lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007efe3da00000)\n\tlibm.so.6 => /usr/lib/x86_64-linux-gnu/libm.so.6 (0x00007efe3e3be000)\n\tlibc.so.6 => /usr/lib/x86_64-linux-gnu/libc.so.6 (0x00007efe3dc1e000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007efe3e4a0000)\n\tlibgcc_s.so.1 => /usr/lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007efe3e39e000)\n"
+      "dynamic_libraries": "\tlinux-vdso.so.1 (0x00007ffda5bd2000)\n\tlibstdc++.so.6 => /usr/lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f97bc600000)\n\tlibm.so.6 => /usr/lib/x86_64-linux-gnu/libm.so.6 (0x00007f97bc920000)\n\tlibc.so.6 => /usr/lib/x86_64-linux-gnu/libc.so.6 (0x00007f97bc41e000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007f97bcf48000)\n\tlibgcc_s.so.1 => /usr/lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f97bcf26000)\n",
+      "link_options": [
+        "-Wl,--wrap=KRIndexMakeRead,--wrap=KMMapMakeRead"
+      ]
     }
   },
   "dependencies": {
@@ -111,5 +117,5 @@
     "libdeflate": "libdeflate0:amd64\t1.14-1",
     "python": "Python 3.13.2"
   },
-  "source_core_commit": "8c3773d5de23556f369303d3a68c46d3f829ba63"
+  "source_core_commit": "2bd6020d34952bc4462e0a9f465ae5be602d3e8a"
 }
