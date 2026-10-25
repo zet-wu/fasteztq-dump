@@ -31,6 +31,7 @@ typedef struct {
 } Worker;
 static struct {
     char *accession;
+    size_t accession_len;
     const char *outdir;
     int64_t first;
     uint64_t count, chunks;
@@ -72,25 +73,43 @@ static void reserve(Buffer *b, size_t need) {
     b->data = p;
     b->cap = cap;
 }
+static size_t decimal(char *dst, uint64_t value) {
+    char digits[20];
+    size_t n = 0;
+    do { digits[n++] = '0' + value % 10; value /= 10; } while (value);
+    for (size_t i = 0; i < n; ++i) dst[i] = digits[n - i - 1];
+    return n;
+}
 static void format(Worker *w, int64_t row, const Spot *s) {
+    char id[20];
+    size_t id_len = decimal(id, row);
+    const char *name = s->name_len ? s->name : id;
+    size_t name_len = s->name_len ? s->name_len : id_len;
+    bool has_name = reader_has_name(w->reader);
+    size_t prefix_len = 1 + state.accession_len + 1 + id_len + (has_name ? 1 + name_len : 0);
     uint32_t offset = 0;
     for (uint32_t i = 0; i < s->nreads; ++i) {
         Buffer *b = &w->raw[s->nreads == 1 ? 0 : i + 1];
         uint32_t len = s->lengths[i];
-        size_t header_cap = strlen(state.accession) + s->name_len + 100;
-        reserve(b, b->len + 2 * header_cap + 2 * (size_t)len + 4);
+        char length[10];
+        size_t length_len = decimal(length, len);
+        size_t header_len = prefix_len + 8 + length_len + 1;
+        reserve(b, b->len + 2 * header_len + 2 * (size_t)len + 2);
         char *p = b->data + b->len;
         char *header = p;
-        int n;
-        if (reader_has_name(w->reader)) {
-            if (s->name_len)
-                n = snprintf(p, header_cap, "@%s.%lld %.*s length=%u\n", state.accession, (long long)row, (int)s->name_len, s->name, len);
-            else n = snprintf(p, header_cap, "@%s.%lld %lld length=%u\n", state.accession, (long long)row, (long long)row, len);
-        } else n = snprintf(p, header_cap, "@%s.%lld length=%u\n", state.accession, (long long)row, len);
-        if (n < 0 || (size_t)n >= header_cap) fail("FASTQ header too long at row %lld", (long long)row);
-        p += n;
+        *p++ = '@';
+        memcpy(p, state.accession, state.accession_len); p += state.accession_len;
+        *p++ = '.';
+        memcpy(p, id, id_len); p += id_len;
+        if (has_name) {
+            *p++ = ' ';
+            memcpy(p, name, name_len); p += name_len;
+        }
+        memcpy(p, " length=", 8); p += 8;
+        memcpy(p, length, length_len); p += length_len;
+        *p++ = '\n';
         memcpy(p, s->bases + offset, len); p += len; *p++ = '\n';
-        memcpy(p, header, n); *p = '+'; p += n;
+        memcpy(p, header, header_len); *p = '+'; p += header_len;
         for (uint32_t j = 0; j < len; ++j) {
             unsigned q = s->quality[offset + j];
             p[j] = (char)(33 + (q < 93 ? q : 93));
@@ -197,6 +216,7 @@ int main(int argc, char **argv) {
     size_t n = strlen(state.accession);
     if (n > 8 && !strcmp(state.accession + n - 8, ".sralite")) state.accession[n - 8] = 0;
     else if (n > 4 && !strcmp(state.accession + n - 4, ".sra")) state.accession[n - 4] = 0;
+    state.accession_len = strlen(state.accession);
     for (int i = 0; i < STREAMS; ++i) {
         output[i].fd = -1;
         char suffix[16] = "";
