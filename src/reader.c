@@ -5,6 +5,7 @@
 #include <vdb/database.h>
 #include <vdb/table.h>
 #include <vdb/cursor.h>
+#include <vdb/blob.h>
 #include <vdb/vdb-priv.h>
 #include <kdb/manager.h>
 #include <klib/namelist.h>
@@ -16,6 +17,8 @@ struct Reader {
     const VTable *table;
     const VCursor *cursor;
     uint32_t col[NCOLS];
+    const VBlob *blob[NCOLS];
+    int64_t begin[NCOLS], end[NCOLS];
     bool has_name;
 };
 static void check(rc_t rc, const char *op) {
@@ -58,7 +61,8 @@ Reader *reader_open(const char *path) {
     check(VTableListReadableColumns(r->table, &columns), "list readable columns");
     r->has_name = contains(columns, "NAME");
     KNamelistRelease(columns);
-    check(VTableCreateCachedCursorRead(r->table, &r->cursor, 8 * 1024 * 1024), "cursor");
+    /* One retained blob per column is sufficient for forward scans. */
+    check(VTableCreateCursorRead(r->table, &r->cursor), "cursor");
     static const char *names[] = {"(INSDC:dna:text)READ", "(INSDC:quality:phred)QUALITY", "READ_LEN", "READ_TYPE", "NAME"};
     for (int i = 0; i < NCOLS; ++i)
         if (i != NAME || r->has_name) check(VCursorAddColumn(r->cursor, &r->col[i], "%s", names[i]), names[i]);
@@ -66,6 +70,7 @@ Reader *reader_open(const char *path) {
     return r;
 }
 void reader_close(Reader *r) {
+    for (int i = 0; i < NCOLS; ++i) VBlobRelease(r->blob[i]);
     VCursorRelease(r->cursor);
     VTableRelease(r->table);
     VDatabaseRelease(r->db);
@@ -79,7 +84,15 @@ bool reader_has_name(Reader *r) { return r->has_name; }
 static const void *cell(Reader *r, int col, int64_t row, uint32_t bits, uint32_t *len) {
     const void *base;
     uint32_t actual_bits, offset;
-    rc_t rc = VCursorCellDataDirect(r->cursor, row, r->col[col], &actual_bits, &base, &offset, len);
+    if (!r->blob[col] || row < r->begin[col] || row > r->end[col]) {
+        VBlobRelease(r->blob[col]);
+        rc_t rc = VCursorGetBlobDirect(r->cursor, &r->blob[col], row, r->col[col]);
+        if (rc) fail("row %lld column %d: decode error 0x%08x", (long long)row, col, rc);
+        uint64_t count;
+        check(VBlobIdRange(r->blob[col], &r->begin[col], &count), "blob range");
+        r->end[col] = r->begin[col] + (int64_t)(count - 1);
+    }
+    rc_t rc = VBlobCellData(r->blob[col], row, &actual_bits, &base, &offset, len);
     if (rc) fail("row %lld column %d: decode error 0x%08x", (long long)row, col, rc);
     if (bits != actual_bits || offset) fail("row %lld column %d: unexpected cell representation", (long long)row, col);
     return base;
