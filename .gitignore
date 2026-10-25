@@ -1,0 +1,6 @@
+DEVELOPMENT_PLAN.md
+tests/data
+tests/logs
+tests/metadata
+tests/SHA256SUMS
+tests/TEST_DATA.md
