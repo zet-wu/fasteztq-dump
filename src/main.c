@@ -218,7 +218,7 @@ int main(int argc, char **argv) {
             else fail("compressor must be libdeflate or isal");
             break;
         case 'h': usage(); return 0;
-        case 'v': puts("fasteztq-dump 0.3.0; ncbi-vdb 3.2.1; libdeflate 1.22; ISA-L 2.31.0"); return 0;
+        case 'v': puts("fasteztq-dump 0.4.0; ncbi-vdb 3.2.1; libdeflate 1.22; ISA-L 2.31.0"); return 0;
         default: return 2;
         }
     }
@@ -250,7 +250,8 @@ int main(int argc, char **argv) {
     }
     atexit(cleanup);
     signal(SIGINT, on_signal); signal(SIGTERM, on_signal);
-    state.workers = threads > 1 ? threads - 1 : 1;
+    bool compute_main = threads <= 8;
+    state.workers = compute_main ? threads : threads - 1;
     Worker *workers = calloc(state.workers, sizeof *workers);
     pthread_t *tids = allocate(state.workers * sizeof *tids);
     if (!workers) fail("out of memory");
@@ -263,22 +264,24 @@ int main(int argc, char **argv) {
     if (state.first < 1 || state.count > INT64_MAX - (uint64_t)state.first) fail("invalid spot range");
     state.chunks = (state.count + CHUNK_ROWS - 1) / CHUNK_ROWS;
     if (threads > 1) {
-        for (unsigned i = 0; i < state.workers; ++i) {
+        for (unsigned i = compute_main ? 1 : 0; i < state.workers; ++i) {
             int rc = pthread_create(&tids[i], NULL, work, &workers[i]);
             if (rc) fail("create worker: %s", strerror(rc));
         }
     }
     for (uint64_t j = 0; j < state.chunks; ++j) {
         Worker *w = &workers[j % state.workers];
-        if (threads == 1) process(w, j);
+        bool local = compute_main && w->index == 0;
+        if (local) process(w, j);
         else {
             pthread_mutex_lock(&state.mutex);
             while (!w->ready && !atomic_load(&failed)) pthread_cond_wait(&state.cond, &state.mutex);
             pthread_mutex_unlock(&state.mutex);
             if (atomic_load(&failed)) break;
         }
+        if (atomic_load(&failed)) break;
         write_chunk(w);
-        if (threads > 1) {
+        if (!local) {
             pthread_mutex_lock(&state.mutex);
             w->ready = false;
             pthread_cond_broadcast(&state.cond);
@@ -286,7 +289,7 @@ int main(int argc, char **argv) {
         }
     }
     for (unsigned i = 0; i < state.workers; ++i) {
-        if (threads > 1) pthread_join(tids[i], NULL);
+        if (!compute_main || i) pthread_join(tids[i], NULL);
         reader_close(workers[i].reader);
         gzip_free(workers[i].compressor);
         for (int s = 0; s < STREAMS; ++s) { free(workers[i].raw[s].data); free(workers[i].compressed[s].data); }

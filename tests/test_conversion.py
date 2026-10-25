@@ -45,7 +45,7 @@ def main():
             source = tmp / (mode + '.sra')
             subprocess.run([build / 'make_fixture', table, mode], check=True)
             subprocess.run([TOOLKIT / 'kar', '-c', source, '-d', table], check=True, capture_output=True)
-            for threads in [1, 8]:
+            for threads in [1, 8, 16]:
                 dest = tmp / f'{mode}-{threads}'
                 result = subprocess.run([binary, source, '-e', str(threads), '-O', dest], capture_output=True)
                 if mode in ['paired', 'mixed', 'no-name']:

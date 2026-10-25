@@ -11,7 +11,7 @@ make -j2
 build/gcc/fasteztq-dump /absolute/path/RUN.sra -e 8 -O /output/directory --memory-mib 1900 --level 6
 ```
 
-`-e` 包含主写线程，8 线程时使用 7 个解码/格式化/压缩工作线程。`--memory-mib` 设置整个进程的地址空间硬上限，默认 1900 MiB，最大 2048 MiB；地址空间包含库、线程栈和全部缓存，因此约束比 RSS 更保守。缓存和有序队列大小由线程数决定。每个块立即压缩为 gzip member，按 spot 顺序写出，输出可以由支持标准串联 gzip 的工具读取。
+`-e` 包含主线程：1–8 线程时主线程同时处理一个计算槽位，9–64 线程时主线程专门顺序写出，其余 N−1 个线程解码、格式化与压缩。`--memory-mib` 设置整个进程的地址空间硬上限，默认 1900 MiB，最大 2048 MiB；地址空间包含库、线程栈和全部缓存，因此约束比 RSS 更保守。缓存和有序队列大小由线程数决定。每个块立即压缩为 gzip member，按 spot 顺序写出，输出可以由支持标准串联 gzip 的工具读取。
 
 单读段 spot 写入 `RUN.fastq.gz`；双读段分别写入 `RUN_1.fastq.gz` 与 `RUN_2.fastq.gz`。文件名中的 `.sra`/`.sralite` 仅用于输出命名，解码方式由归档内部结构决定。默认头及加号行保留 accession、spot id、NAME（可用时）与读长。质量字符按原工具规则将 Q≥93 表示为 `~`。`-l/--level 0..12` 选择 libdeflate 压缩级别，默认 6，对应 `fastq-dump --gzip` 所用 zlib 6 的相近档位。`--compressor isal --level 0..3` 可显式选择 ISA-L 的速度档位；不同压缩库的级别与压缩率分别解释。
 
