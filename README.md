@@ -4,7 +4,7 @@
 
 ## 构建与使用
 
-需要 Linux x86-64、GCC/G++、GNU Make 4.3+、CMake、NASM、curl 和 Python 3.12+。首次构建下载官方 ncbi-vdb 3.2.1、libdeflate 1.22 与 ISA-L 2.31.0 源码，三者静态链接；默认 GCC 选项为 `-O3 -DNDEBUG`，压缩库按运行时 CPU 能力选择实现。开发校验另需 libdeflate 共享库。
+需要 Linux x86-64、GCC/G++、GNU Make 4.3+、CMake、NASM、curl 和 Python 3.12+。首次构建下载官方 ncbi-vdb 3.2.1、libdeflate 1.22 与 ISA-L 2.31.0 源码，三者静态链接；默认 GCC 选项为 `-O3 -DNDEBUG`，压缩库按运行时 CPU 能力选择实现。开发校验另需 libdeflate 共享库，以及 `/public/bio-informatic-software/sratoolkit.3.2.1-ubuntu64/bin/` 下的 SRA Toolkit 3.2.1。
 
 ```sh
 make -j2
@@ -23,7 +23,7 @@ build/gcc/fasteztq-dump /absolute/path/RUN.sra -e 8 -O /output/directory --memor
 
 ```sh
 python3 scripts/benchmark.py --ids T02 T08 T12 T16 --threads 8 --repeats 1 --compressor libdeflate --level 6 \
-  --builds gcc=build/gcc/fasteztq-dump --report reports/prototype.jsonl
+  --builds gcc=build/gcc/fasteztq-dump --report reports/local-benchmark.jsonl
 ```
 
 验收使用显式 `--compressor libdeflate --level 6`。完整矩阵覆盖 20 个输入、8/16 线程、三次测量和 GCC/AOCC 构建。可通过 `--builds gcc=... aocc=...` 指定独立构建的可执行文件。计时覆盖转换进程从启动到退出；原工具输出 FASTQ，新工具输出 gzip FASTQ。每次运行预读输入形成热页缓存，交替执行顺序。独立校验子进程在计时结束后逐成员解压所有 gzip 内容并逐字节比较，保留字节数、SHA-256、记录数、流映射、CPU 时间、OS 峰值 RSS 和进程树采样。全部转换输出及临时文件位于 `/dev/shm/fasteztq-bench/`，每组校验后清理。
@@ -40,3 +40,9 @@ make -j2 BUILD=build/aocc CC=/opt/AMD/aocc-compiler-5.0.0/bin/clang \
 AOCC 示例针对本机 AMD EPYC 7502；编译器和架构选项按目标机器显式指定。`make check` 在 `/dev/shm` 创建小型 SRA，验证混合布局、名称、质量边界、截断和写入失败清理，同时检查开发校验器对后续 gzip 成员损坏的检测能力。
 
 模块职责和边界见 [ARCHITECTURE.md](ARCHITECTURE.md)。实验日志及最终性能表位于 [reports](reports/README.md)。
+
+## 当前验收结果
+
+20 个输入、8/16 线程、GCC/AOCC 两种构建各三次，共 360 次转换和 240 次完整比较，全部输出逐字节一致，峰值总 RSS 812.9 MiB。基线输出未压缩 FASTQ，新工具直接输出 libdeflate 6 级 gzip FASTQ。
+
+16 线程下两种构建对全部 20 个输入均加速，中位耗时合计约为基线的 58%，累计速度比约 1.71×。8 线程下 GCC 的中位耗时合计基本持平，AOCC 约慢 1.1%；分别有 6、8 个输入回退。AOCC 的总体收益接近 GCC，默认构建采用 GCC。每个输入的速度、CPU 时间、RSS、实际线程数和回退名单见 [完整结果](reports/final-results.md)。

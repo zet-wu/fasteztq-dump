@@ -82,15 +82,19 @@ def main():
         f'基线为 fasterq-dump 3.2.1 的未压缩 FASTQ；新工具直接输出 {compressor}、{level} 级 gzip FASTQ。表中耗时含各自完整转换、关闭文件和结束线程。每轮预读同一输入，按热页缓存比较，三轮轮换执行顺序。速度比＝基线中位耗时／新工具中位耗时。', '',
         'fastq-dump 3.2.1 的 gzip 默认是 zlib 6；各压缩库的档位与大小校准见 [压缩实验](README.md#默认压缩级别)，独立于全文件转换计时。', '',
         f"新工具最大总 RSS 为 {max(r['peak_rss_mib'] for r in new):.1f} MiB，全部低于 2048 MiB。RSS 取三轮内核峰值与完整进程树采样最大值；20 ms 采样可能遗漏瞬时线程及进程树峰值，新工具均为单进程。", '',
-        '|线程|构建|速度比范围|速度比几何平均|回退样本数|最大 RSS MiB|', '|---:|---|---:|---:|---:|---:|']
+        '|线程|构建|速度比范围|速度比几何平均|累计耗时秒|累计耗时比|回退样本数|最大 RSS MiB|', '|---:|---|---:|---:|---:|---:|---:|---:|']
     for threads in [8, 16]:
         for tool in ['gcc', 'aocc']:
             group = [r for r in new if r['threads'] == threads and r['tool'] == tool]
             speeds = [r['speedup'] for r in group]
             geo = math.exp(statistics.mean(math.log(x) for x in speeds))
-            lines.append(f"|{threads}|{tool.upper()}|{min(speeds):.2f}–{max(speeds):.2f}×|{geo:.2f}×|{sum(s<1 for s in speeds)}|{max(r['peak_rss_mib'] for r in group):.1f}|")
+            total = sum(r['median_seconds'] for r in group)
+            baseline_total = sum(r['median_seconds'] for r in rows if r['threads'] == threads and r['tool'] == 'baseline')
+            lines.append(f"|{threads}|{tool.upper()}|{min(speeds):.2f}–{max(speeds):.2f}×|{geo:.2f}×|{total:.3f}|{baseline_total/total:.3f}×|{sum(s<1 for s in speeds)}|{max(r['peak_rss_mib'] for r in group):.1f}|")
+    lines += ['', '累计耗时为 20 个输入各自三次中位数之和；累计耗时比为基线合计／新工具合计。几何平均对每个输入等权，不能解释为整套数据的累计加速。接近 1× 的差异应结合原始三轮波动解释。']
     for threads in [8, 16]:
-        lines += ['', f'## {threads} 线程', '',
+        baseline_total = sum(r['median_seconds'] for r in rows if r['threads'] == threads and r['tool'] == 'baseline')
+        lines += ['', f'## {threads} 线程', '', f'20 个输入的基线中位耗时合计 {baseline_total:.3f} 秒。', '',
                   '|输入|格式|基线秒|GCC 秒|GCC 速度比|GCC RSS MiB|AOCC 秒|AOCC 速度比|AOCC RSS MiB|',
                   '|---|---|---:|---:|---:|---:|---:|---:|---:|']
         for i in range(1, 21):
@@ -108,13 +112,13 @@ def main():
         for tool in ['baseline', 'gcc', 'aocc']:
             group = [r for r in rows if r['threads'] == threads and r['tool'] == tool]
             lines.append(f"|{tool}|{threads}|{max(r['peak_os_threads'] for r in group)}|{max(r['peak_rss_mib'] for r in group):.1f}|{max(r['peak_tmpfs_additional_gib'] for r in group):.2f}|")
-    lines += ['', 'tmpfs 增量为计时期间整个文件系统已用空间增量，可能受其他任务影响。全部输出及基线临时文件位于 `/dev/shm`，比较后删除。逐输入 CPU 时间、RSS、线程数和字节数见 [CSV](final-results.csv)；完整命令、每轮耗时与流摘要见 [原始记录](' + Path(args.report).name + ')；编译器、依赖版本及完整编译日志见 [构建记录](builds.json)。', '',
+    lines += ['', 'tmpfs 增量为计时期间整个文件系统已用空间增量，可能受其他任务影响。全部输出及基线临时文件位于 `/dev/shm`，比较后删除。逐输入 CPU 时间、RSS、线程数和字节数见 [CSV](' + output.with_suffix('.csv').name + ')；完整命令、每轮耗时与流摘要见 [原始记录](' + Path(args.report).name + ')；编译器、依赖版本及完整编译日志见 [构建记录](builds.json)。', '',
               '```sh',
               f'python3 scripts/benchmark.py --threads 8 16 --repeats 3 --compressor {compressor} --level {level} \\',
               '  --builds gcc=build/gcc-release/fasteztq-dump aocc=build/aocc-release/fasteztq-dump \\',
-              f'  --report {args.report}',
-              f'python3 scripts/summarize_benchmark.py {args.report}',
-              '```', '',
+              '  --report reports/recheck-level6.jsonl',
+              'python3 scripts/summarize_benchmark.py reports/recheck-level6.jsonl --output reports/recheck-results',
+              '```', '', '每批复测选择新的报告路径；完整矩阵汇总会拒绝重复或缺失的测量。', '',
               '适用范围：普通 FASTQ 导入、无需参考恢复的 Normalized/Lite，单条或两条非空生物学读段。技术读段、空读段、超过两条读段、参考/比对表、超出块缓冲或进程内存预算的输入会明确失败。块顺序、默认头与加号行、质量和输出流划分以原工具为比较基准。']
     output.with_suffix('.md').write_text('\n'.join(lines) + '\n')
     print(f'{len(measured)} measurements, {len(compared)} comparisons, {stream_count} streams; all accepted')

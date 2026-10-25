@@ -1,5 +1,9 @@
 # 开发测量
 
+最终结果见 [完整验收表](final-results.md) 和 [CSV](final-results.csv)，原始数据为 [final-level6.jsonl](final-level6.jsonl)。固定配置为 libdeflate 1.22、6 级，20 输入 × 8/16 线程 × GCC/AOCC，每项三次。360 次转换及 240 次全文件比较全部通过，涉及 360 个输出流、174,972 个 gzip 成员和累计 912.21 GB 的解压内容；峰值总 RSS 812.9 MiB。
+
+速度目标在 16 线程下对全部输入达成，累计耗时比约 1.71×。8 线程累计耗时基本持平，GCC 有 6 个输入回退、AOCC 有 8 个，逐项列在结果表中。所有性能对照均为基线 FASTQ 与新工具 gzip FASTQ。
+
 `prototype.jsonl` 保存最小实现的代表样本全量转换和比较结果。每行 `measurement` 为一轮真实执行；`comparison` 为计时结束后的全流字节比较。日志位于对应 `*-logs/` 子目录。
 
 计时程序串行执行转换，原工具的 FASTQ 与新工具的 gzip FASTQ 直接比较耗时。输入每轮预读形成热页缓存。OS `wait4` 峰值和 20 ms 完整进程树采样一起记录；采样可能遗漏瞬时线程或进程树 RSS 峰值。tmpfs 峰值为该轮运行期间整个 `/dev/shm` 已用空间的增量，其他任务的 tmpfs 变化可能影响此值。
