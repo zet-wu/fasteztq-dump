@@ -189,7 +189,7 @@ int main(int argc, char **argv) {
     if (!path) fail("resolve input: %s", strerror(errno));
     struct rlimit lim = {.rlim_cur = memory * MIB, .rlim_max = memory * MIB};
     if (setrlimit(RLIMIT_AS, &lim)) fail("set memory limit: %s", strerror(errno));
-    mallopt(M_ARENA_MAX, 2);
+    mallopt(M_ARENA_MAX, threads < 16 ? threads : 16);
     if (mkdir(state.outdir, 0777) && errno != EEXIST) fail("create output directory: %s", strerror(errno));
     state.accession = strdup(strrchr(path, '/') + 1);
     if (!state.accession) fail("out of memory");
