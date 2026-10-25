@@ -80,12 +80,18 @@ def main():
                 assert f.read() == content
         alias = tmp / 'alias.sra'
         alias.symlink_to(source)
-        for level in [0, 2, 3]:
-            dest = tmp / f'level-{level}'
-            subprocess.run([binary, alias, '-e', '1', '-l', str(level), '-O', dest], check=True, capture_output=True)
+        for backend, level in [('libdeflate', 0), ('libdeflate', 1), ('libdeflate', 6), ('libdeflate', 12),
+                               ('isal', 0), ('isal', 1), ('isal', 2), ('isal', 3)]:
+            dest = tmp / f'level-{backend}-{level}'
+            subprocess.run([binary, alias, '-e', '1', '--compressor', backend, '--level', str(level), '-O', dest], check=True, capture_output=True)
             for name, content in expected('paired', 'alias').items():
                 with gzip.open(dest / name, 'rb') as f:
                     assert f.read() == content
+        for options in [['--level', '13'], ['--level', '-1'], ['--compressor', 'unknown'],
+                        ['--compressor', 'isal'], ['--compressor', 'isal', '--level', '4']]:
+            dest = tmp / 'invalid-options'
+            result = subprocess.run([binary, source, '-O', dest, *options], capture_output=True)
+            assert result.returncode and not dest.exists(), (options, result.stderr)
         truncated = tmp / 'truncated.sra'
         data = source.read_bytes()
         truncated.write_bytes(data[:len(data)//2])

@@ -1,6 +1,6 @@
 # 转换器结构
 
-`src/main.c` 管理命令行、资源预算、有序流水线和文件发布；`src/reader.c` 负责 SRA 解码边界；`src/gzip.c` 封装 ISA-L 压缩。三者组成一个进程。
+`src/main.c` 管理命令行、资源预算、有序流水线和文件发布；`src/reader.c` 负责 SRA 解码边界；`src/gzip.c` 封装 libdeflate 和 ISA-L 压缩。三者组成一个进程。
 
 ## 输入与解码
 
@@ -18,7 +18,7 @@
 
 FASTQ 的序列头与加号行使用同一段头部字节。数字直接转为十进制，质量以 Phred+33 编码并按原工具规则饱和到 `~`。单读段 spot 写入流 0，双读段 spot 的两条读段分别写入流 1 和流 2。所有流共享任务顺序，因此保留 spot 顺序和配对关系。
 
-每个非空块直接压缩为完整 gzip member，包含 gzip CRC 和长度字段。主线程拼接这些成员。最终输出为标准多成员 gzip FASTQ。
+压缩库和级别由命令行指定，默认 libdeflate 6。每个非空块直接压缩为完整 gzip member，包含 gzip CRC 和长度字段。主线程拼接这些成员。最终输出为标准多成员 gzip FASTQ。
 
 ## 内存与错误处理
 

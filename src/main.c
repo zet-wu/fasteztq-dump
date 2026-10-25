@@ -183,26 +183,35 @@ static void usage(void) {
     puts("Usage: fasteztq-dump LOCAL_SRA -O OUTPUT_DIR [-e THREADS] [--memory-mib 1900] [-l LEVEL]\n"
          "Direct ordered gzip FASTQ, matching fasterq-dump 3.2.1 --split-files.\n"
          "Threads: 1..64, default 8 (includes main writer); memory: 256..2048 MiB.\n"
-         "Compression: ISA-L level 0..3, default 1. Existing outputs are preserved.");
+         "Compression: --compressor libdeflate (default), -l/--level 0..12 (default 6).\n"
+         "Optional --compressor isal requires an explicit level 0..3. Existing outputs are preserved.");
 }
 int main(int argc, char **argv) {
-    unsigned threads = 8, memory = 1900, level = 1;
+    unsigned threads = 8, memory = 1900, level = 6;
+    GzipBackend backend = GZIP_LIBDEFLATE;
+    bool level_given = false;
     state.outdir = ".";
     static const struct option opts[] = {{"threads",1,NULL,'e'},{"outdir",1,NULL,'O'},{"memory-mib",1,NULL,'m'},
-        {"level",1,NULL,'l'},{"help",0,NULL,'h'},{"version",0,NULL,'v'},{NULL,0,NULL,0}};
+        {"level",1,NULL,'l'},{"compressor",1,NULL,'c'},{"help",0,NULL,'h'},{"version",0,NULL,'v'},{NULL,0,NULL,0}};
     int c;
     while ((c = getopt_long(argc, argv, "e:O:l:hv", opts, NULL)) != -1) {
         switch (c) {
         case 'e': threads = number(optarg, 1, 64, "threads"); break;
         case 'O': state.outdir = optarg; break;
         case 'm': memory = number(optarg, 256, 2048, "memory-mib"); break;
-        case 'l': level = number(optarg, 0, 3, "level"); break;
+        case 'l': level = number(optarg, 0, 12, "level"); level_given = true; break;
+        case 'c':
+            if (!strcmp(optarg, "libdeflate")) backend = GZIP_LIBDEFLATE;
+            else if (!strcmp(optarg, "isal")) backend = GZIP_ISAL;
+            else fail("compressor must be libdeflate or isal");
+            break;
         case 'h': usage(); return 0;
-        case 'v': puts("fasteztq-dump 0.2.0; ncbi-vdb 3.2.1; ISA-L 2.31.0"); return 0;
+        case 'v': puts("fasteztq-dump 0.3.0; ncbi-vdb 3.2.1; libdeflate 1.22; ISA-L 2.31.0"); return 0;
         default: return 2;
         }
     }
     if (optind + 1 != argc) { usage(); return 2; }
+    if (backend == GZIP_ISAL && (!level_given || level > 3)) fail("ISA-L requires an explicit --level 0..3");
     struct stat st;
     if (stat(argv[optind], &st) || !S_ISREG(st.st_mode)) fail("input must be an existing local SRA archive");
     char *path = realpath(argv[optind], NULL);
@@ -236,7 +245,7 @@ int main(int argc, char **argv) {
     for (unsigned i = 0; i < state.workers; ++i) {
         workers[i].reader = reader_open(path, i ? workers[0].reader : NULL);
         workers[i].index = i;
-        workers[i].compressor = gzip_new(level);
+        workers[i].compressor = gzip_new(backend, level);
     }
     reader_range(workers[0].reader, &state.first, &state.count);
     if (state.first < 1 || state.count > INT64_MAX - (uint64_t)state.first) fail("invalid spot range");
@@ -277,7 +286,8 @@ int main(int argc, char **argv) {
         if (unlink(output[i].temp)) fail("remove temporary link: %s", strerror(errno));
     }
     complete = true;
-    fprintf(stderr, "spots=%llu threads=%u memory_limit_mib=%u\n", (unsigned long long)state.count, threads, memory);
+    fprintf(stderr, "spots=%llu threads=%u memory_limit_mib=%u compressor=%s level=%u\n",
+            (unsigned long long)state.count, threads, memory, backend == GZIP_LIBDEFLATE ? "libdeflate" : "isal", level);
     free(workers); free(tids); free(path); free(state.accession);
     return 0;
 }

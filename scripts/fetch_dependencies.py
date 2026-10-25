@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fetch official, versioned ncbi-vdb and ISA-L source archives."""
+"""Fetch official, versioned decoder and compressor source archives."""
 from pathlib import Path
 import subprocess
 import tarfile
@@ -10,6 +10,7 @@ deps.mkdir(exist_ok=True)
 packages = [
     ('ncbi-vdb-3.2.1', 'https://codeload.github.com/ncbi/ncbi-vdb/tar.gz/refs/tags/3.2.1'),
     ('isa-l-2.31.0', 'https://codeload.github.com/intel/isa-l/tar.gz/refs/tags/v2.31.0'),
+    ('libdeflate-1.22', 'https://codeload.github.com/ebiggers/libdeflate/tar.gz/refs/tags/v1.22'),
 ]
 for name, url in packages:
     source = deps / name

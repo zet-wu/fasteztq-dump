@@ -101,7 +101,11 @@ def main():
     ap.add_argument('--repeats', type=int, default=3)
     ap.add_argument('--builds', nargs='+', default=['gcc=build/gcc/fasteztq-dump', 'aocc=build/aocc/fasteztq-dump'])
     ap.add_argument('--report', default='reports/benchmark.jsonl')
+    ap.add_argument('--compressor', choices=['libdeflate', 'isal'], default='libdeflate')
+    ap.add_argument('--level', type=int, default=6)
     args = ap.parse_args()
+    if not 0 <= args.level <= (12 if args.compressor == 'libdeflate' else 3):
+        ap.error('level outside compressor range')
     if any(t not in (1, 8, 16) for t in args.threads) or args.repeats < 1:
         ap.error('threads must be 1, 8 or 16; repeats must be positive')
     rows = json.loads((ROOT / 'tests/metadata/verification.json').read_text())['files']
@@ -156,13 +160,16 @@ def main():
                             if name == 'baseline':
                                 argv = [BASELINE, src, '--split-files', '-e', threads, '-O', dest, '-t', folder / 'baseline-tmp']
                             else:
-                                argv = [builds[name], src, '-e', threads, '-O', dest, '--memory-mib', 1900]
+                                argv = [builds[name], src, '-e', threads, '-O', dest, '--memory-mib', 1900,
+                                        '--compressor', args.compressor, '--level', args.level]
                             result = measure(argv, logs / f'{case}-{name}.log', tmp_root)
                             result.update(kind='measurement', run_id=run_id, test_id=row['test_id'], run=row['run'],
                                 input_format=row['format'], input_md5=row['md5'], input_sha256=row['sha256'],
                                 input_bytes=row['bytes'], tool=name, threads=threads, repeat=repeat+1,
                                 source_commit=version, source_dirty=dirty, cache='input pre-read before each timed run; warm page cache',
                                 output_format='FASTQ' if name == 'baseline' else 'gzip FASTQ')
+                            if name != 'baseline':
+                                result.update(compressor=args.compressor, compression_level=args.level)
                             out.write(json.dumps(result) + '\n')
                             print(case, name, f"{result['elapsed_seconds']:.3f}s", f"RSS={result['kernel_maxrss_bytes']/MIB:.1f}MiB", f"threads={result['peak_os_threads']}", flush=True)
                             if result['returncode']:
