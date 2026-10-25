@@ -3,3 +3,7 @@
 `prototype.jsonl` 保存最小实现的代表样本全量转换和比较结果。每行 `measurement` 为一轮真实执行；`comparison` 为计时结束后的全流字节比较。日志位于对应 `*-logs/` 子目录。
 
 计时程序串行执行转换，原工具的 FASTQ 与新工具的 gzip FASTQ 直接比较耗时。输入每轮预读形成热页缓存。OS `wait4` 峰值和 20 ms 完整进程树采样一起记录；采样可能遗漏瞬时线程或进程树 RSS 峰值。tmpfs 峰值为该轮运行期间整个 `/dev/shm` 已用空间的增量，其他任务的 tmpfs 变化可能影响此值。
+
+`full-correctness.jsonl` 是一次中途停止的开发批次：首个输入之后，校验器曾与计时驱动共用进程，父进程历史 RSS 被后续 fork 子进程继承，导致 `kernel_maxrss_bytes` 偏高。该批次只用于保留已完成的字节比较证据，不用于内存验收或最终速度表。当前驱动将校验器放入独立短生命周期进程。
+
+`blob.jsonl` 记录一次失败的缓存实验。`blob-forward.jsonl` 对应保留当前列 blob 的顺序扫描实现。`compression.jsonl` 是 libdeflate/ISA-L 的完整文件探索性比较，每个配置一次测量；最终结论使用完整矩阵的三次中位数。

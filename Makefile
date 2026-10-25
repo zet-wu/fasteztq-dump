@@ -31,3 +31,12 @@ $(BUILD)/fasteztq-dump: $(OBJECTS) $(VDB_LIB)
 	$(CC) $(LDFLAGS) -o $@ $(OBJECTS) $(VDB_LIB) -ldeflate -lstdc++ -lm -ldl -pthread
 clean:
 	rm -rf $(BUILD)
+
+$(BUILD)/vdb/lib/libncbi-wvdb.a: $(VDB_LIB)
+	cmake --build $(BUILD)/vdb --target ncbi-wvdb -j $(JOBS)
+$(BUILD)/make_fixture: tests/make_fixture.c $(BUILD)/vdb/lib/libncbi-wvdb.a
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(INCLUDES) $< $(BUILD)/vdb/lib/libncbi-wvdb.a -lstdc++ -lm -ldl -pthread -o $@
+.PHONY: check
+check: all $(BUILD)/make_fixture
+	python3 -m unittest discover -s tests -p 'test_compare.py'
+	python3 tests/test_conversion.py --build $(BUILD)

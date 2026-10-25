@@ -5,14 +5,13 @@ Each independent comparison reads every gzip member to EOF and compares bytes.
 Only this development script hashes and re-reads output, outside conversion timing.
 """
 import argparse
-import gzip
-import hashlib
 import json
 import os
 from pathlib import Path
 import shutil
 import signal
 import subprocess
+import sys
 import time
 import uuid
 
@@ -78,26 +77,12 @@ def compare(baseline, new):
     compressed = {p.stem: p for p in new.glob('*.fastq.gz')}
     if not originals or originals.keys() != compressed.keys():
         raise RuntimeError(f'Output stream mismatch: {sorted(originals)} vs {sorted(compressed)}')
-    results = []
-    for name, src in sorted(originals.items()):
-        dst = compressed[name]
-        sha_a, sha_b, size, lines = hashlib.sha256(), hashlib.sha256(), 0, 0
-        with src.open('rb') as a, gzip.open(dst, 'rb') as b:
-            while True:
-                x, y = a.read(4 * MIB), b.read(4 * MIB)
-                if x != y:
-                    offset = next((i for i, (xx, yy) in enumerate(zip(x, y)) if xx != yy), min(len(x), len(y)))
-                    raise RuntimeError(f'{name}: byte mismatch at {size + offset}: {x[offset:offset+80]!r} vs {y[offset:offset+80]!r}')
-                if not x:
-                    break
-                sha_a.update(x); sha_b.update(y)
-                size += len(x); lines += x.count(b'\n')
-        if lines % 4:
-            raise RuntimeError(f'{name}: incomplete FASTQ record')
-        results.append(dict(baseline_stream=name, gzip_stream=dst.name, bytes=size,
-            baseline_sha256=sha_a.hexdigest(), decompressed_sha256=sha_b.hexdigest(),
-            records=lines // 4, gzip_bytes=dst.stat().st_size, byte_identical=True, gzip_eof_validated=True))
-    return results
+    # Keep mmap/decompression memory in a short-lived process: the long-lived
+    # parent must stay small, since fork can carry its historical RSS into a
+    # subsequent child's wait4 high-water statistic.
+    return [json.loads(subprocess.check_output(
+        [sys.executable, ROOT / 'scripts/compare_gzip.py', src, compressed[name]], env=ENV))
+        for name, src in sorted(originals.items())]
 
 
 def available_memory():
@@ -132,7 +117,8 @@ def main():
     logs = report.parent / (report.stem + '-logs') / run_id
     logs.mkdir(parents=True)
     version = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
-    dirty = bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT))
+    dirty = bool(subprocess.check_output(
+        ['git', 'status', '--porcelain', '--', 'src', 'Makefile', 'scripts', 'tests'], cwd=ROOT))
     with report.open('a', buffering=1) as out:
         for row in rows:
             for threads in args.threads:
@@ -157,6 +143,8 @@ def main():
                             dest = folder / name
                             dest.mkdir()
                             src = (ROOT / row['relative_path']).resolve()
+                            if src.stat().st_size != row['bytes']:
+                                raise RuntimeError(f'{src}: input size differs from verified fixture manifest')
                             # Explicit warm-page-cache protocol, outside timed conversion.
                             with src.open('rb') as f:
                                 while f.read(8 * MIB):
