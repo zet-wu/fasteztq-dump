@@ -145,7 +145,6 @@ static void process(Worker *w, uint64_t chunk) {
         if (!raw->len) continue;
         reserve(zip, gzip_bound(raw->len));
         zip->len = gzip_encode(w->compressor, raw->data, raw->len, zip->data, zip->cap);
-        if (!zip->len) fail("gzip compression failed");
     }
 }
 static void *work(void *arg) {
@@ -277,7 +276,6 @@ int main(int argc, char **argv) {
             pthread_mutex_lock(&state.mutex);
             while (!w->ready && !atomic_load(&failed)) pthread_cond_wait(&state.cond, &state.mutex);
             pthread_mutex_unlock(&state.mutex);
-            if (atomic_load(&failed)) break;
         }
         if (atomic_load(&failed)) break;
         write_chunk(w);
