@@ -1,7 +1,7 @@
 #define _GNU_SOURCE
 #include "reader.h"
 #include "common.h"
-#include <libdeflate.h>
+#include "gzip.h"
 #include <pthread.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -24,7 +24,7 @@
 typedef struct { char *data; size_t len, cap; } Buffer;
 typedef struct {
     Reader *reader;
-    struct libdeflate_compressor *compressor;
+    GzipCompressor *compressor;
     Buffer raw[STREAMS], compressed[STREAMS];
     unsigned index;
     bool ready;
@@ -133,8 +133,8 @@ static void process(Worker *w, uint64_t chunk) {
     for (int i = 0; i < STREAMS; ++i) {
         Buffer *raw = &w->raw[i], *zip = &w->compressed[i];
         if (!raw->len) continue;
-        reserve(zip, libdeflate_gzip_compress_bound(w->compressor, raw->len));
-        zip->len = libdeflate_gzip_compress(w->compressor, raw->data, raw->len, zip->data, zip->cap);
+        reserve(zip, gzip_bound(raw->len));
+        zip->len = gzip_encode(w->compressor, raw->data, raw->len, zip->data, zip->cap);
         if (!zip->len) fail("gzip compression failed");
     }
 }
@@ -183,7 +183,7 @@ static void usage(void) {
     puts("Usage: fasteztq-dump LOCAL_SRA -O OUTPUT_DIR [-e THREADS] [--memory-mib 1900] [-l LEVEL]\n"
          "Direct ordered gzip FASTQ, matching fasterq-dump 3.2.1 --split-files.\n"
          "Threads: 1..64, default 8 (includes main writer); memory: 256..2048 MiB.\n"
-         "Compression: libdeflate level 1..12, default 1. Existing outputs are preserved.");
+         "Compression: ISA-L level 0..3, default 1. Existing outputs are preserved.");
 }
 int main(int argc, char **argv) {
     unsigned threads = 8, memory = 1900, level = 1;
@@ -196,9 +196,9 @@ int main(int argc, char **argv) {
         case 'e': threads = number(optarg, 1, 64, "threads"); break;
         case 'O': state.outdir = optarg; break;
         case 'm': memory = number(optarg, 256, 2048, "memory-mib"); break;
-        case 'l': level = number(optarg, 1, 12, "level"); break;
+        case 'l': level = number(optarg, 0, 3, "level"); break;
         case 'h': usage(); return 0;
-        case 'v': puts("fasteztq-dump 0.1.0; ncbi-vdb 3.2.1; libdeflate " LIBDEFLATE_VERSION_STRING); return 0;
+        case 'v': puts("fasteztq-dump 0.2.0; ncbi-vdb 3.2.1; ISA-L 2.31.0"); return 0;
         default: return 2;
         }
     }
@@ -211,7 +211,8 @@ int main(int argc, char **argv) {
     if (setrlimit(RLIMIT_AS, &lim)) fail("set memory limit: %s", strerror(errno));
     mallopt(M_ARENA_MAX, threads < 16 ? threads : 16);
     if (mkdir(state.outdir, 0777) && errno != EEXIST) fail("create output directory: %s", strerror(errno));
-    state.accession = strdup(strrchr(path, '/') + 1);
+    const char *input_name = strrchr(argv[optind], '/');
+    state.accession = strdup(input_name ? input_name + 1 : argv[optind]);
     if (!state.accession) fail("out of memory");
     size_t n = strlen(state.accession);
     if (n > 8 && !strcmp(state.accession + n - 8, ".sralite")) state.accession[n - 8] = 0;
@@ -235,8 +236,7 @@ int main(int argc, char **argv) {
     for (unsigned i = 0; i < state.workers; ++i) {
         workers[i].reader = reader_open(path, i ? workers[0].reader : NULL);
         workers[i].index = i;
-        workers[i].compressor = libdeflate_alloc_compressor(level);
-        if (!workers[i].compressor) fail("allocate compressor");
+        workers[i].compressor = gzip_new(level);
     }
     reader_range(workers[0].reader, &state.first, &state.count);
     if (state.first < 1 || state.count > INT64_MAX - (uint64_t)state.first) fail("invalid spot range");
@@ -266,7 +266,7 @@ int main(int argc, char **argv) {
     for (unsigned i = 0; i < state.workers; ++i) {
         if (threads > 1) pthread_join(tids[i], NULL);
         reader_close(workers[i].reader);
-        libdeflate_free_compressor(workers[i].compressor);
+        gzip_free(workers[i].compressor);
         for (int s = 0; s < STREAMS; ++s) { free(workers[i].raw[s].data); free(workers[i].compressed[s].data); }
     }
     if (interrupted) fail("interrupted");

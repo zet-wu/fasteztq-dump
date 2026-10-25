@@ -4,7 +4,7 @@
 
 ## 构建与使用
 
-需要 Linux、GCC/G++、CMake、curl、Python 3 和 libdeflate 开发包。首次构建下载官方 ncbi-vdb 3.2.1 源码，静态链接 VDB。
+需要 Linux x86-64、GCC/G++、GNU Make 4.3+、CMake、NASM、curl 和 Python 3.12+。首次构建下载官方 ncbi-vdb 3.2.1 与 ISA-L 2.31.0 源码，两者静态链接；默认 GCC 选项为 `-O3 -DNDEBUG`，ISA-L 按运行时 CPU 能力选择实现。开发校验另需 libdeflate 共享库。
 
 ```sh
 make -j2
@@ -13,11 +13,11 @@ build/gcc/fasteztq-dump /absolute/path/RUN.sra -e 8 -O /output/directory --memor
 
 `-e` 包含主写线程，8 线程时使用 7 个解码/格式化/压缩工作线程。`--memory-mib` 设置整个进程的地址空间硬上限，默认 1900 MiB，最大 2048 MiB；地址空间包含库、线程栈和全部缓存，因此约束比 RSS 更保守。缓存和有序队列大小由线程数决定。每个块立即压缩为 gzip member，按 spot 顺序写出，输出可以由支持标准串联 gzip 的工具读取。
 
-单读段 spot 写入 `RUN.fastq.gz`；双读段分别写入 `RUN_1.fastq.gz` 与 `RUN_2.fastq.gz`。文件名中的 `.sra`/`.sralite` 仅用于输出命名，解码方式由归档内部结构决定。默认头及加号行保留 accession、spot id、NAME（可用时）与读长。质量字符按原工具规则将 Q≥93 表示为 `~`。
+单读段 spot 写入 `RUN.fastq.gz`；双读段分别写入 `RUN_1.fastq.gz` 与 `RUN_2.fastq.gz`。文件名中的 `.sra`/`.sralite` 仅用于输出命名，解码方式由归档内部结构决定。默认头及加号行保留 accession、spot id、NAME（可用时）与读长。质量字符按原工具规则将 Q≥93 表示为 `~`。`-l 0..3` 选择 ISA-L 压缩级别，默认 1。
 
 参考/比对表、技术读段、空读段及超过两条读段的布局会明确报错。每块每流的缓冲上限为 64 MiB；超出预算时明确失败。已有结果文件会保留。结果先以隐藏临时文件写出，在所有工作线程结束并成功关闭输出后发布；失败会清理本次临时结果。
 
-可以通过 `CC`、`CXX`、`CFLAGS`、`CPPFLAGS`、`LDFLAGS`、`VDB_FLAGS`、`BUILD` 覆盖构建配置。`JOBS` 控制 VDB 构建并行度，默认 16。不同编译器使用独立 `BUILD` 目录。
+可以通过 `CC`、`CXX`、`CFLAGS`、`CPPFLAGS`、`LDFLAGS`、`VDB_FLAGS`、`BUILD` 覆盖构建配置。`JOBS` 控制每项依赖构建的并行度，默认 16；`make -j2` 同时构建两个依赖时合计最多约 32 个编译任务。不同编译器使用独立 `BUILD` 目录。
 
 ## 开发验证
 
@@ -26,6 +26,17 @@ python3 scripts/benchmark.py --ids T02 T08 T12 T16 --threads 8 --repeats 1 \
   --builds gcc=build/gcc/fasteztq-dump --report reports/prototype.jsonl
 ```
 
-完整矩阵默认覆盖 20 个输入、8/16 线程、三次测量和 GCC/AOCC 构建。计时覆盖转换进程从启动到退出；原工具输出 FASTQ，新工具输出 gzip FASTQ。每次运行预读输入形成热页缓存，交替执行顺序。独立开发脚本在计时结束后流式读取所有 gzip 成员并逐字节比较，保留字节数、SHA-256、记录数、流映射、CPU 时间、OS 峰值 RSS 和进程树采样。全部转换输出及临时文件位于 `/dev/shm/fasteztq-bench/`，每组校验后清理。
+完整矩阵覆盖 20 个输入、8/16 线程、三次测量和 GCC/AOCC 构建。可通过 `--builds gcc=... aocc=...` 指定独立构建的可执行文件。计时覆盖转换进程从启动到退出；原工具输出 FASTQ，新工具输出 gzip FASTQ。每次运行预读输入形成热页缓存，交替执行顺序。独立校验子进程在计时结束后逐成员解压所有 gzip 内容并逐字节比较，保留字节数、SHA-256、记录数、流映射、CPU 时间、OS 峰值 RSS 和进程树采样。全部转换输出及临时文件位于 `/dev/shm/fasteztq-bench/`，每组校验后清理。
 
 正式转换路径执行解码边界、读段布局、质量长度和输出错误检查。开发一致性比较由 `scripts/benchmark.py` 执行。测试输入及来源见 `tests/TEST_DATA.md`、`tests/metadata/verification.json`；需求与验收标准见 `DEVELOPMENT_PLAN.md`。
+
+```sh
+make check
+make -j2 BUILD=build/aocc CC=/opt/AMD/aocc-compiler-5.0.0/bin/clang \
+  CXX=/opt/AMD/aocc-compiler-5.0.0/bin/clang++ \
+  CFLAGS='-O3 -DNDEBUG -march=znver2' VDB_FLAGS='-march=znver2'
+```
+
+AOCC 示例针对本机 AMD EPYC 7502；编译器和架构选项按目标机器显式指定。`make check` 在 `/dev/shm` 创建小型 SRA，验证混合布局、名称、质量边界、截断和写入失败清理，同时检查开发校验器对后续 gzip 成员损坏的检测能力。
+
+模块职责和边界见 [ARCHITECTURE.md](ARCHITECTURE.md)。实验日志及最终性能表位于 [reports](reports/README.md)。

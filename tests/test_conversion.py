@@ -78,6 +78,14 @@ def main():
         for name, content in expected('paired', 'renamed').items():
             with gzip.open(dest / name, 'rb') as f:
                 assert f.read() == content
+        alias = tmp / 'alias.sra'
+        alias.symlink_to(source)
+        for level in [0, 2, 3]:
+            dest = tmp / f'level-{level}'
+            subprocess.run([binary, alias, '-e', '1', '-l', str(level), '-O', dest], check=True, capture_output=True)
+            for name, content in expected('paired', 'alias').items():
+                with gzip.open(dest / name, 'rb') as f:
+                    assert f.read() == content
         truncated = tmp / 'truncated.sra'
         data = source.read_bytes()
         truncated.write_bytes(data[:len(data)//2])
@@ -91,7 +99,7 @@ def main():
         result = subprocess.run([binary, source, '-e', '1', '-O', dest], preexec_fn=size_limit, capture_output=True)
         assert result.returncode and b'write output' in result.stderr, result.stderr
         assert not list(dest.iterdir())
-        print('renamed format, truncated input, and write failure OK', flush=True)
+        print('renamed format, symlink naming, gzip levels, truncated input, and write failure OK', flush=True)
 
 
 if __name__ == '__main__':

@@ -7,3 +7,5 @@
 `full-correctness.jsonl` 是一次中途停止的开发批次：首个输入之后，校验器曾与计时驱动共用进程，父进程历史 RSS 被后续 fork 子进程继承，导致 `kernel_maxrss_bytes` 偏高。该批次只用于保留已完成的字节比较证据，不用于内存验收或最终速度表。当前驱动将校验器放入独立短生命周期进程。
 
 `blob.jsonl` 记录一次失败的缓存实验。`blob-forward.jsonl` 对应保留当前列 blob 的顺序扫描实现。`compression.jsonl` 是 libdeflate/ISA-L 的完整文件探索性比较，每个配置一次测量；最终结论使用完整矩阵的三次中位数。
+
+`levels.jsonl` 与 `static-column-check.jsonl` 属于已撤回的静态列实验。ncbi-vdb 3.2.1 的 `VCursorIsStaticColumn` 对组合生成的 NAME 会给出不适合跨行复用值的结果，T02 在偏移 330 检出头部差异；诊断见 `static-column-diagnostic.log`。转换器按每行对应的 blob cell 取值。压缩级别比较使用修正后的 `levels-valid.jsonl`。
