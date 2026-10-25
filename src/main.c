@@ -16,6 +16,7 @@
 #include <sys/resource.h>
 #include <signal.h>
 #include <malloc.h>
+#include <stdatomic.h>
 
 #define MIB (1024UL * 1024)
 #define CHUNK_ROWS 16384
@@ -41,6 +42,8 @@ static struct {
 } state = {.mutex = PTHREAD_MUTEX_INITIALIZER, .cond = PTHREAD_COND_INITIALIZER};
 static struct { char temp[PATH_MAX], final[PATH_MAX]; int fd; bool published; } output[STREAMS];
 static bool complete;
+static atomic_bool failed;
+static _Thread_local bool worker_context;
 static volatile sig_atomic_t interrupted;
 
 static void cleanup(void) {
@@ -56,6 +59,13 @@ _Noreturn void fail(const char *fmt, ...) {
     vfprintf(stderr, fmt, args);
     fputc('\n', stderr);
     va_end(args);
+    if (worker_context) {
+        pthread_mutex_lock(&state.mutex);
+        atomic_store(&failed, true);
+        pthread_cond_broadcast(&state.cond);
+        pthread_mutex_unlock(&state.mutex);
+        pthread_exit(NULL);
+    }
     exit(1);
 }
 void *allocate(size_t n) {
@@ -140,10 +150,12 @@ static void process(Worker *w, uint64_t chunk) {
 }
 static void *work(void *arg) {
     Worker *w = arg;
+    worker_context = true;
     for (uint64_t j = w->index; j < state.chunks; j += state.workers) {
         pthread_mutex_lock(&state.mutex);
-        while (w->ready) pthread_cond_wait(&state.cond, &state.mutex);
+        while (w->ready && !atomic_load(&failed)) pthread_cond_wait(&state.cond, &state.mutex);
         pthread_mutex_unlock(&state.mutex);
+        if (atomic_load(&failed)) break;
         process(w, j);
         pthread_mutex_lock(&state.mutex);
         w->ready = true;
@@ -261,8 +273,9 @@ int main(int argc, char **argv) {
         if (threads == 1) process(w, j);
         else {
             pthread_mutex_lock(&state.mutex);
-            while (!w->ready) pthread_cond_wait(&state.cond, &state.mutex);
+            while (!w->ready && !atomic_load(&failed)) pthread_cond_wait(&state.cond, &state.mutex);
             pthread_mutex_unlock(&state.mutex);
+            if (atomic_load(&failed)) break;
         }
         write_chunk(w);
         if (threads > 1) {
@@ -278,6 +291,7 @@ int main(int argc, char **argv) {
         gzip_free(workers[i].compressor);
         for (int s = 0; s < STREAMS; ++s) { free(workers[i].raw[s].data); free(workers[i].compressed[s].data); }
     }
+    if (atomic_load(&failed)) return 1;
     if (interrupted) fail("interrupted");
     for (int i = 0; i < STREAMS; ++i) if (output[i].fd >= 0) {
         if (close(output[i].fd)) fail("close output: %s", strerror(errno));

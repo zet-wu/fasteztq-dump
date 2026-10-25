@@ -95,6 +95,7 @@ bool reader_has_name(Reader *r) { return r->has_name; }
 static const void *cell(Reader *r, int col, int64_t row, uint32_t bits, uint32_t *len) {
     if (!r->blob[col] || row < r->begin[col] || row > r->end[col]) {
         VBlobRelease(r->blob[col]);
+        r->blob[col] = NULL;
         rc_t rc = VCursorGetBlobDirect(r->cursor, &r->blob[col], row, r->col[col]);
         if (rc) fail("row %lld column %d: decode error 0x%08x", (long long)row, col, rc);
         uint64_t count;

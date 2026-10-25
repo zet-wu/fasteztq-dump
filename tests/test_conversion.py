@@ -40,7 +40,7 @@ def main():
     binary = build / 'fasteztq-dump'
     with tempfile.TemporaryDirectory(prefix='fasteztq-tests-', dir='/dev/shm') as directory:
         tmp = Path(directory)
-        for mode in ['paired', 'mixed', 'no-name', 'technical', 'empty', 'three', 'bad-quality', 'reference']:
+        for mode in ['paired', 'mixed', 'no-name', 'technical', 'late-technical', 'empty', 'three', 'bad-quality', 'reference']:
             table = tmp / (mode + '-table')
             source = tmp / (mode + '.sra')
             subprocess.run([build / 'make_fixture', table, mode], check=True)

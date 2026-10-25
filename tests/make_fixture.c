@@ -14,6 +14,7 @@
 int main(int argc, char **argv) {
     if (argc != 3) return 2;
     const char *mode = argv[2];
+    unsigned rows = !strcmp(mode, "late-technical") ? 200000 : 20000;
     VDBManager *mgr;
     VSchema *schema;
     VTable *table;
@@ -28,9 +29,9 @@ int main(int argc, char **argv) {
         "table Test:Reads #1 { column INSDC:dna:text READ; column INSDC:quality:phred QUALITY; "
         "column U32 READ_LEN; column U8 READ_TYPE; %s "
         "readonly column U64 BASE_COUNT = 40000; readonly column U64 BIO_BASE_COUNT = 40000; "
-        "readonly column U64 SPOT_COUNT = 20000; }; "
+        "readonly column U64 SPOT_COUNT = %u; }; "
         "database Test:DB #1 { table Test:Reads #1 SEQUENCE; table Test:Reads #1 REFERENCE; };",
-        !strcmp(mode, "no-name") ? "" : "column ascii NAME;");
+        !strcmp(mode, "no-name") ? "" : "column ascii NAME;", rows);
     CHECK(VSchemaParseText(schema, "fixture", text, strlen(text)));
     VDatabase *db = NULL;
     if (!strcmp(mode, "reference")) {
@@ -46,10 +47,11 @@ int main(int argc, char **argv) {
     int ncols = !strcmp(mode, "no-name") ? 4 : 5;
     for (int i = 0; i < ncols; ++i) CHECK(VCursorAddColumn(cursor, &ids[i], "%s", cols[i]));
     CHECK(VCursorOpen(cursor));
-    for (unsigned row = 1; row <= 20000; ++row) {
+    for (unsigned row = 1; row <= rows; ++row) {
         unsigned nr = !strcmp(mode, "mixed") ? 1 + (row % 2) : 2;
         uint32_t len[] = {row % 3 + 1, row % 5 + 1, 1};
         uint8_t type[] = {1, 1, 1};
+        if (row == 180000 && !strcmp(mode, "late-technical")) type[1] = 0;
         /* Errors after a complete chunk exercise partial-output cleanup. */
         if (row == 18000) {
             if (!strcmp(mode, "technical")) type[1] = 0;
