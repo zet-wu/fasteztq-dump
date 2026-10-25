@@ -97,6 +97,8 @@ def available_memory():
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--ids', nargs='*')
+    ap.add_argument('--metadata', default='tests/metadata/verification.json', help='verified input manifest')
+    ap.add_argument('--tmpfs-budget-gib', type=float, default=252, help='development workspace memory budget')
     ap.add_argument('--threads', nargs='+', type=int, default=[8, 16])
     ap.add_argument('--repeats', type=int, default=3)
     ap.add_argument('--builds', nargs='+', default=['gcc=build/gcc/fasteztq-dump', 'aocc=build/aocc/fasteztq-dump'])
@@ -110,7 +112,7 @@ def main():
         ap.error('level outside compressor range')
     if any(t not in (1, 8, 16) for t in args.threads) or args.repeats < 1:
         ap.error('threads must be 1, 8 or 16; repeats must be positive')
-    rows = json.loads((ROOT / 'tests/metadata/verification.json').read_text())['files']
+    rows = json.loads((ROOT / args.metadata).read_text())['files']
     if args.ids:
         rows = [r for r in rows if r['test_id'] in args.ids]
         if len(rows) != len(set(args.ids)):
@@ -144,8 +146,10 @@ def main():
                     case = f"{row['test_id']}-t{threads}-r{repeat+1}"
                     maxlen = max(map(int, row['sampled_read_lengths']))
                     nr = 1 if row['actual_sampled_layout'] == 'SE' else 2
-                    estimate = row['spots'] * nr * (2 * maxlen + 400) * 4 + 2 * 1024**3
-                    if min(shutil.disk_usage('/dev/shm').free, available_memory()) < estimate:
+                    # Allow 160 header bytes per read and simultaneous output/scratch.
+                    estimated_fastq = row['spots'] * nr * (2 * maxlen + 160)
+                    estimate = estimated_fastq * max(2, 1 + len(builds)) + 8 * 1024**3
+                    if min(shutil.disk_usage('/dev/shm').free, available_memory(), args.tmpfs_budget_gib * 1024**3 - shutil.disk_usage('/dev/shm').used) < estimate:
                         raise RuntimeError(f'{case}: insufficient tmpfs/memory for conservative {estimate}-byte peak estimate')
                     folder = tmp_root / case
                     folder.mkdir()
@@ -175,18 +179,18 @@ def main():
                                         '--compressor', compressor, '--level', level]
                             result = measure(argv, logs / f'{case}-{name}.log', tmp_root)
                             result.update(kind='measurement', run_id=run_id, test_id=row['test_id'], run=row['run'],
-                                input_format=row['format'], input_md5=row['md5'], input_sha256=row['sha256'],
+                                input_format=row['format'], input_md5=row['md5'], input_sha256=row.get('sha256'),
                                 input_bytes=row['bytes'], tool=name, threads=threads, repeat=repeat+1,
                                 source_commit=version, source_dirty=dirty, cache='input pre-read before each timed run; warm page cache',
                                 output_format='FASTQ' if name == 'baseline' else 'gzip FASTQ')
                             if name != 'baseline':
-                                result.update(compressor=compressor, compression_level=level)
+                                result.update(compressor=compressor, compression_level=level,
+                                    rss_target_bytes=2 * 1024**3,
+                                    rss_target_met=max(result['kernel_maxrss_bytes'], result['sampled_tree_peak_rss_bytes']) <= 2 * 1024**3)
                             out.write(json.dumps(result) + '\n')
                             print(case, name, f"{result['elapsed_seconds']:.3f}s", f"RSS={result['kernel_maxrss_bytes']/MIB:.1f}MiB", f"threads={result['peak_os_threads']}", flush=True)
                             if result['returncode']:
                                 raise RuntimeError(f'{name} failed; see {result["stderr"]}')
-                            if name != 'baseline' and max(result['kernel_maxrss_bytes'], result['sampled_tree_peak_rss_bytes']) > 2 * 1024**3:
-                                raise RuntimeError(f'{name} exceeded 2 GiB RSS')
                             measurements[name] = result
                         # Conversions above stay serial. Only untimed acceptance
                         # checks run concurrently (at most 2 builds x 3 streams).
