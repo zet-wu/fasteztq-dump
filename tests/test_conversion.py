@@ -70,6 +70,25 @@ def main():
                         message = b'supported layout'
                     assert message in result.stderr, result.stderr.decode()
             print(mode, 'OK', flush=True)
+        # A complete chunk exceeds the former 64 MiB per-stream cap.
+        table, source = tmp / 'long-table', tmp / 'long.sra'
+        subprocess.run([build / 'make_fixture', table, 'long'], check=True)
+        subprocess.run([TOOLKIT / 'kar', '-c', source, '-d', table], check=True, capture_output=True)
+        for backend in ['libdeflate', 'isal']:
+            dest = tmp / ('long-' + backend)
+            subprocess.run([binary, source, '-e', '1', '-O', dest, '--compressor', backend,
+                            '--level', '1'], check=True, capture_output=True)
+            for suffix in ['_1', '_2']:
+                with gzip.open(dest / ('long' + suffix + '.fastq.gz'), 'rb') as f:
+                    total = 0
+                    for row in range(1, 16385):
+                        name = f'instrument:{row}' if row % 7 else str(row)
+                        header = f'long.{row} {name} length=2048\n'.encode()
+                        expected_record = b'@' + header + b'A' * 2048 + b'\n+' + header + b'?' * 2048 + b'\n'
+                        assert f.read(len(expected_record)) == expected_record
+                        total += len(expected_record)
+                    assert not f.read(1) and total > 64 * 1024**2
+        print('long read blocks above 64 MiB OK', flush=True)
         source = tmp / 'paired.sra'
         # Quality decoding is based on VDB contents, even with a Lite suffix.
         renamed = tmp / 'renamed.sralite'

@@ -1,7 +1,7 @@
 """Development-only, bounded-output gzip member comparison using libdeflate.
 
 The archive is mapped read-only to the process (private writable mapping is
-needed by ctypes); decompressed data stays in a fixed 64 MiB buffer. No output
+needed by ctypes); decompressed data uses a reusable buffer sized to the largest member. No output
 copy is written to disk. libdeflate validates each member's CRC and ISIZE.
 """
 import ctypes as C
@@ -41,6 +41,13 @@ def compare_stream(original, compressed):
                     consumed, produced = C.c_size_t(), C.c_size_t()
                     rc = decompress(decoder, address + offset, len(archive) - offset,
                                     output, capacity, C.byref(consumed), C.byref(produced))
+                    while rc == 3:  # LIBDEFLATE_INSUFFICIENT_SPACE
+                        view.release()
+                        capacity *= 2
+                        output = C.create_string_buffer(capacity)
+                        view = memoryview(output).cast('B')
+                        rc = decompress(decoder, address + offset, len(archive) - offset,
+                                        output, capacity, C.byref(consumed), C.byref(produced))
                     if rc:
                         raise RuntimeError(f'{compressed.name}: gzip member {members} failed validation (libdeflate={rc})')
                     count = produced.value

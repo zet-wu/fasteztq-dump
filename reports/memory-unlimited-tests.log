@@ -1,0 +1,42 @@
+gcc  -O3 -DNDEBUG -Ideps/ncbi-vdb-3.2.1/interfaces -Ideps/ncbi-vdb-3.2.1/interfaces/cc/gcc/x86_64 -Ideps/isa-l-2.31.0/include -Ideps/libdeflate-1.22 -Ideps/ncbi-vdb-3.2.1/libs/kfs/unix tests/make_fixture.c build/gcc/vdb/lib/libncbi-wvdb.a -lstdc++ -lm -ldl -pthread -o build/gcc/make_fixture
+gcc  -O3 -DNDEBUG -std=c11 -Wall -Wextra -Wpedantic -pthread -Ideps/ncbi-vdb-3.2.1/interfaces -Ideps/ncbi-vdb-3.2.1/interfaces/cc/gcc/x86_64 -Ideps/isa-l-2.31.0/include -Ideps/libdeflate-1.22 -Ideps/ncbi-vdb-3.2.1/libs/kfs/unix -c src/main.c -o build/gcc/main.o
+gcc  -O3 -DNDEBUG -std=c11 -Wall -Wextra -Wpedantic -pthread -Ideps/ncbi-vdb-3.2.1/interfaces -Ideps/ncbi-vdb-3.2.1/interfaces/cc/gcc/x86_64 -Ideps/isa-l-2.31.0/include -Ideps/libdeflate-1.22 -Ideps/ncbi-vdb-3.2.1/libs/kfs/unix -c src/gzip.c -o build/gcc/gzip.o
+gcc  -Wl,--wrap=KRIndexMakeRead,--wrap=KMMapMakeRead -o build/gcc/fasteztq-dump build/gcc/main.o build/gcc/reader.o build/gcc/gzip.o build/gcc/index_mmap.o build/gcc/vdb/lib/libncbi-vdb.a build/gcc/isal/libisal.a build/gcc/libdeflate/libdeflate.a -lstdc++ -lm -ldl -pthread
+python3 -m unittest discover -s tests -p 'test_compare.py'
+........
+----------------------------------------------------------------------
+Ran 8 tests in 0.104s
+
+OK
+python3 tests/test_conversion.py --build build/gcc
+shared index mappings, offsets, sizes and ownership OK
+paired OK
+mixed OK
+no-name OK
+technical OK
+late-technical OK
+empty OK
+three OK
+bad-quality OK
+reference OK
+long read blocks above 64 MiB OK
+renamed format, symlink naming, gzip levels, truncated input, and write failure OK
+python3 -m unittest discover -s tests -p 'test_compare.py'
+........
+----------------------------------------------------------------------
+Ran 8 tests in 0.105s
+
+OK
+python3 tests/test_conversion.py --build build/gcc
+shared index mappings, offsets, sizes and ownership OK
+paired OK
+mixed OK
+no-name OK
+technical OK
+late-technical OK
+empty OK
+three OK
+bad-quality OK
+reference OK
+long read blocks above 64 MiB OK
+renamed format, symlink naming, gzip levels, truncated input, and write failure OK

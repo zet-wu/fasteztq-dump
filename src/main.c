@@ -14,7 +14,6 @@
 #include <getopt.h>
 #include <limits.h>
 #include <sys/stat.h>
-#include <sys/resource.h>
 #include <signal.h>
 #include <malloc.h>
 #include <stdatomic.h>
@@ -72,16 +71,15 @@ _Noreturn void fail(const char *fmt, ...) {
 }
 void *allocate(size_t n) {
     void *p = malloc(n);
-    if (!p) fail("memory budget exhausted allocating %zu bytes", n);
+    if (!p) fail("out of memory allocating %zu bytes", n);
     return p;
 }
 static void reserve(Buffer *b, size_t need) {
     if (need <= b->cap) return;
-    if (need > 64 * MIB) fail("chunk exceeds 64 MiB per-stream buffer limit");
     size_t cap = b->cap ? b->cap : MIB;
-    while (cap < need) cap *= 2;
+    while (cap < need) cap = cap > SIZE_MAX / 2 ? need : cap * 2;
     char *p = realloc(b->data, cap);
-    if (!p) fail("memory budget exhausted growing buffer to %zu bytes", cap);
+    if (!p) fail("out of memory growing buffer to %zu bytes", cap);
     b->data = p;
     b->cap = cap;
 }
@@ -193,25 +191,24 @@ static unsigned number(const char *s, unsigned lo, unsigned hi, const char *labe
 }
 static void on_signal(int sig) { interrupted = sig; }
 static void usage(void) {
-    puts("Usage: fasteztq-dump LOCAL_SRA -O OUTPUT_DIR [-e THREADS] [--memory-mib 1900] [-l LEVEL]\n"
+    puts("Usage: fasteztq-dump LOCAL_SRA -O OUTPUT_DIR [-e THREADS] [-l LEVEL]\n"
          "Direct ordered gzip FASTQ, matching fasterq-dump 3.2.1 --split-files.\n"
-         "Threads: 1..64, default 8 (includes main writer); memory: 256..2048 MiB.\n"
+         "Threads: 1..64, default 8 (includes main writer).\n"
          "Compression: --compressor libdeflate (default), -l/--level 0..12 (default 6).\n"
          "Optional --compressor isal requires an explicit level 0..3. Existing outputs are preserved.");
 }
 int main(int argc, char **argv) {
-    unsigned threads = 8, memory = 1900, level = 6;
+    unsigned threads = 8, level = 6;
     GzipBackend backend = GZIP_LIBDEFLATE;
     bool level_given = false;
     state.outdir = ".";
-    static const struct option opts[] = {{"threads",1,NULL,'e'},{"outdir",1,NULL,'O'},{"memory-mib",1,NULL,'m'},
+    static const struct option opts[] = {{"threads",1,NULL,'e'},{"outdir",1,NULL,'O'},
         {"level",1,NULL,'l'},{"compressor",1,NULL,'c'},{"help",0,NULL,'h'},{"version",0,NULL,'v'},{NULL,0,NULL,0}};
     int c;
     while ((c = getopt_long(argc, argv, "e:O:l:hv", opts, NULL)) != -1) {
         switch (c) {
         case 'e': threads = number(optarg, 1, 64, "threads"); break;
         case 'O': state.outdir = optarg; break;
-        case 'm': memory = number(optarg, 256, 2048, "memory-mib"); break;
         case 'l': level = number(optarg, 0, 12, "level"); level_given = true; break;
         case 'c':
             if (!strcmp(optarg, "libdeflate")) backend = GZIP_LIBDEFLATE;
@@ -229,8 +226,6 @@ int main(int argc, char **argv) {
     if (stat(argv[optind], &st) || !S_ISREG(st.st_mode)) fail("input must be an existing local SRA archive");
     char *path = realpath(argv[optind], NULL);
     if (!path) fail("resolve input: %s", strerror(errno));
-    struct rlimit lim = {.rlim_cur = memory * MIB, .rlim_max = memory * MIB};
-    if (setrlimit(RLIMIT_AS, &lim)) fail("set memory limit: %s", strerror(errno));
     mallopt(M_ARENA_MAX, threads < 16 ? threads : 16);
     if (mkdir(state.outdir, 0777) && errno != EEXIST) fail("create output directory: %s", strerror(errno));
     const char *input_name = strrchr(argv[optind], '/');
@@ -303,8 +298,8 @@ int main(int argc, char **argv) {
         if (unlink(output[i].temp)) fail("remove temporary link: %s", strerror(errno));
     }
     complete = true;
-    fprintf(stderr, "spots=%llu threads=%u memory_limit_mib=%u compressor=%s level=%u\n",
-            (unsigned long long)state.count, threads, memory, backend == GZIP_LIBDEFLATE ? "libdeflate" : "isal", level);
+    fprintf(stderr, "spots=%llu threads=%u compressor=%s level=%u\n",
+            (unsigned long long)state.count, threads, backend == GZIP_LIBDEFLATE ? "libdeflate" : "isal", level);
     free(workers); free(tids); free(path); free(state.accession);
     return 0;
 }

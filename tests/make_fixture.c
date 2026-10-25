@@ -14,7 +14,8 @@
 int main(int argc, char **argv) {
     if (argc != 3) return 2;
     const char *mode = argv[2];
-    unsigned rows = !strcmp(mode, "late-technical") ? 200000 : 20000;
+    int long_reads = !strcmp(mode, "long");
+    unsigned rows = !strcmp(mode, "late-technical") ? 200000 : (long_reads ? 16384 : 20000);
     VDBManager *mgr;
     VSchema *schema;
     VTable *table;
@@ -47,9 +48,14 @@ int main(int argc, char **argv) {
     int ncols = !strcmp(mode, "no-name") ? 4 : 5;
     for (int i = 0; i < ncols; ++i) CHECK(VCursorAddColumn(cursor, &ids[i], "%s", cols[i]));
     CHECK(VCursorOpen(cursor));
+    char long_read[4096];
+    uint8_t long_quality[4096];
+    memset(long_read, 'A', sizeof long_read);
+    memset(long_quality, 30, sizeof long_quality);
     for (unsigned row = 1; row <= rows; ++row) {
         unsigned nr = !strcmp(mode, "mixed") ? 1 + (row % 2) : 2;
         uint32_t len[] = {row % 3 + 1, row % 5 + 1, 1};
+        if (long_reads) len[0] = len[1] = 2048;
         uint8_t type[] = {1, 1, 1};
         if (row == 180000 && !strcmp(mode, "late-technical")) type[1] = 0;
         /* Errors after a complete chunk exercise partial-output cleanup. */
@@ -63,8 +69,8 @@ int main(int argc, char **argv) {
         uint8_t q[10] = {0, 3, 30, 40, 93, 94, 255, 20, 2, 1};
         unsigned nq = total - (row == 18000 && !strcmp(mode, "bad-quality"));
         CHECK(VCursorOpenRow(cursor));
-        CHECK(VCursorWrite(cursor, ids[0], 8, read, 0, total));
-        CHECK(VCursorWrite(cursor, ids[1], 8, q, 0, nq));
+        CHECK(VCursorWrite(cursor, ids[0], 8, long_reads ? long_read : read, 0, total));
+        CHECK(VCursorWrite(cursor, ids[1], 8, long_reads ? long_quality : q, 0, nq));
         CHECK(VCursorWrite(cursor, ids[2], 32, len, 0, nr));
         CHECK(VCursorWrite(cursor, ids[3], 8, type, 0, nr));
         if (ncols == 5) {

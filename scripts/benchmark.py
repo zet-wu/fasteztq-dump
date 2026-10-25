@@ -171,7 +171,7 @@ def main():
                                 argv = [BASELINE, src, '--split-files', '-e', threads, '-O', dest, '-t', folder / 'baseline-tmp']
                             else:
                                 compressor, level = configs[name]
-                                argv = [builds[name], src, '-e', threads, '-O', dest, '--memory-mib', 1900,
+                                argv = [builds[name], src, '-e', threads, '-O', dest,
                                         '--compressor', compressor, '--level', level]
                             result = measure(argv, logs / f'{case}-{name}.log', tmp_root)
                             result.update(kind='measurement', run_id=run_id, test_id=row['test_id'], run=row['run'],

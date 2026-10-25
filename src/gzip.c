@@ -3,6 +3,8 @@
 #include <igzip_lib.h>
 #include <libdeflate.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include <limits.h>
 
 struct GzipCompressor {
     GzipBackend backend;
@@ -35,6 +37,7 @@ void gzip_free(GzipCompressor *c) {
 }
 size_t gzip_bound(size_t size) {
     /* More than the maximum stored-block and gzip wrapper expansion. */
+    if (size > SIZE_MAX - size / 8 - 1024) fail("gzip output size overflows size_t");
     return size + size / 8 + 1024;
 }
 size_t gzip_encode(GzipCompressor *c, const void *data, size_t size, void *output, size_t capacity) {
@@ -43,6 +46,7 @@ size_t gzip_encode(GzipCompressor *c, const void *data, size_t size, void *outpu
         if (!n) fail("libdeflate gzip compression exceeded output buffer");
         return n;
     }
+    if (size > UINT_MAX || capacity > UINT_MAX) fail("ISA-L requires input and output buffers within UINT_MAX bytes");
     struct isal_zstream *z = &c->stream;
     isal_deflate_stateless_init(z);
     z->level = c->level;
