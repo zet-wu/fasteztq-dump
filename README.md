@@ -1,50 +1,85 @@
 # fasteztq-dump
 
-独立的本地 SRA → gzip FASTQ 转换器，输出语义对应 SRA Toolkit 3.2.1 的 `fasterq-dump --split-files`。支持无参考依赖的 Normalized 和 Lite 输入、每个 spot 一条或两条非空生物学读段、定长与可变读长。质量由输入的 VDB schema 解码。
+[English](README_en.md)
 
-## 构建与使用
+更快的 SRA 转换为 gzip FASTQ 的命令行工具，支持多线程。仅支持由 FASTQ 打包得到的 Normalized、Lite SRA 输入，每个 spot 含一条或两条非空生物学读段的布局。
 
-需要 Linux x86-64、GCC/G++、GNU Make 4.3+、CMake、NASM、curl 和 Python 3.12+。首次构建下载官方 ncbi-vdb 3.2.1、libdeflate 1.22 与 ISA-L 2.31.0 源码，三者静态链接；默认 GCC 选项为 `-O3 -DNDEBUG`，压缩库按运行时 CPU 能力选择实现。开发校验另需 libdeflate 共享库，以及 `/public/bio-informatic-software/sratoolkit.3.2.1-ubuntu64/bin/` 下的 SRA Toolkit 3.2.1。
+## 构建
 
-```sh
-make -j2
-build/gcc/fasteztq-dump /absolute/path/RUN.sra -e 8 -O /output/directory --level 6
-```
+支持 Linux x86-64。构建需要 GCC/G++、GNU Make、CMake 3.16+、pkg-config，以及 libdeflate 1.14+ 和 ISA-L 2.31.0+ 开发包。正确性测试使用 Python 3.9+ 标准库。
 
-`-e` 包含主线程：1–8 线程时主线程同时处理一个计算槽位，9–64 线程时主线程专门顺序写出，其余 N−1 个线程解码、格式化与压缩。缓存和有序队列的槽位数量由线程数决定，缓冲随当前块的读段长度增长并复用；内存使用由分块流水线、背压和共享只读索引控制。开发测试独立观测 RSS。每个块立即压缩为 gzip member，按 spot 顺序写出，输出可以由支持标准串联 gzip 的工具读取。
-
-单读段 spot 写入 `RUN.fastq.gz`；双读段分别写入 `RUN_1.fastq.gz` 与 `RUN_2.fastq.gz`。文件名中的 `.sra`/`.sralite` 仅用于输出命名，解码方式由归档内部结构决定。默认头及加号行保留 accession、spot id、NAME（可用时）与读长。质量字符按原工具规则将 Q≥93 表示为 `~`。`-l/--level 0..12` 选择 libdeflate 压缩级别，默认 6，对应 `fastq-dump --gzip` 所用 zlib 6 的相近档位。`--compressor isal --level 0..3` 可显式选择 ISA-L 的速度档位；ISA-L 0 是其最快压缩档位，libdeflate 0 为存储模式。不同库的级别与压缩率对照见 [压缩实验](reports/compression-comparison.md)。
-
-参考/比对表、技术读段、空读段及超过两条读段的布局会明确报错。缓冲按当前块的读段长度按需分配。已有结果文件会保留。结果先以隐藏临时文件写出，在所有工作线程结束并成功关闭输出后发布；失败会清理本次临时结果。
-
-可以通过 `CC`、`CXX`、`CFLAGS`、`CPPFLAGS`、`LDFLAGS`、`VDB_FLAGS`、`BUILD` 覆盖构建配置。`JOBS` 控制每项依赖构建的并行度，默认 16；`make -j2` 同时构建两个依赖时合计最多约 32 个编译任务。不同编译器使用独立 `BUILD` 目录。
-
-## 开发验证
+Debian/Ubuntu：
 
 ```sh
-python3 scripts/benchmark.py --ids T02 T08 T12 T16 --threads 8 --repeats 1 --compressor libdeflate --level 6 \
-  --builds gcc=build/gcc/fasteztq-dump --report reports/local-benchmark.jsonl
+sudo apt install build-essential cmake pkg-config libdeflate-dev libisal-dev python3 git
 ```
 
-验收使用显式 `--compressor libdeflate --level 6`。完整矩阵覆盖 20 个输入、8/16 线程、三次测量和 GCC/AOCC 构建。可通过 `--builds gcc=... aocc=...` 指定独立构建的可执行文件。计时覆盖转换进程从启动到退出；原工具输出 FASTQ，新工具输出 gzip FASTQ。每次运行预读输入形成热页缓存，交替执行顺序。独立校验子进程在计时结束后逐成员解压所有 gzip 内容并逐字节比较，保留字节数、SHA-256、记录数、流映射、CPU 时间、OS 峰值 RSS 和进程树采样。全部转换输出及临时文件位于 `/dev/shm/fasteztq-bench/`，每组校验后清理。
+Red Hat 系（以 9 系列为例）：先按发行版启用 [CRB 和 EPEL](https://www.redhat.com/en/blog/install-epel-linux)。
 
-正式转换路径执行解码边界、读段布局、质量长度和输出错误检查。开发一致性比较由 `scripts/benchmark.py` 执行。测试输入及来源见 `tests/TEST_DATA.md`、`tests/metadata/verification.json`；需求与验收标准见 `DEVELOPMENT_PLAN.md`。
+CentOS Stream 9：
 
 ```sh
-make check
-make -j2 BUILD=build/aocc CC=/opt/AMD/aocc-compiler-5.0.0/bin/clang \
-  CXX=/opt/AMD/aocc-compiler-5.0.0/bin/clang++ \
-  CFLAGS='-O3 -DNDEBUG -march=znver2' VDB_FLAGS='-march=znver2'
+sudo dnf install dnf-plugins-core
+sudo dnf config-manager --set-enabled crb
+sudo dnf install epel-release epel-next-release
 ```
 
-AOCC 示例针对本机 AMD EPYC 7502；编译器和架构选项按目标机器显式指定。`make check` 在 `/dev/shm` 创建小型 SRA，验证混合布局、名称、质量边界、截断和写入失败清理，同时检查开发校验器对后续 gzip 成员损坏的检测能力。
+RHEL 9：
 
-模块职责和边界见 [ARCHITECTURE.md](ARCHITECTURE.md)。实验日志及最终性能表位于 [reports](reports/README.md)。
+```sh
+sudo subscription-manager repos --enable codeready-builder-for-rhel-9-x86_64-rpms
+sudo dnf install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
+```
 
-## 当前验收结果
+然后安装开发依赖；Fedora 可直接执行此命令：
 
-基线 fasterq-dump 3.2.1 输出未压缩 FASTQ，新工具直接输出 libdeflate 6 级 gzip FASTQ。所有正式计时均使用完整输入、8/16 线程各三轮，计时后独立逐字节比对全部输出。
+```sh
+sudo dnf install gcc gcc-c++ make cmake pkgconf-pkg-config libdeflate-devel isa-l-devel python3 git
+```
 
-来自 RNA-seq 样品清单的 6.06、10.00、19.92 GB 三个 Normalized 大样本，GCC 构建共 36 次转换和 18 次全文件比较全部通过，累计比较 1.35 TB，最高 RSS 1756.9 MiB。8 线程速度比分别为 0.609×、0.532×、0.464×，16 线程分别为 0.886×、0.709×、0.633×（原版耗时 / 新工具耗时）。三个大样本在两档线程数下均慢于未压缩基线，当前默认压缩配置的速度目标在这些大样本上仍未达成。详见 [大样本报告](reports/large-samples.md)。
+ncbi-vdb 通过 Git 子模块固定在 3.2.1 对应提交。获取仓库时使用 `git clone --recurse-submodules`；已有工作副本可执行：
 
-20 个约 0.027–1.20 GB 输入的 GCC/AOCC 矩阵保存了 360 次转换、240 次完整比较，全部逐字节一致，峰值 RSS 812.9 MiB。在这一测试矩阵中，16 线程两种构建对全部 20 个输入均加速，累计速度比约 1.71×；8 线程累计耗时基本持平，GCC/AOCC 分别有 6/8 个输入回退。AOCC 在该矩阵的总体收益接近 GCC，默认构建采用 GCC。具体结果与测量源码版本见 [20 输入矩阵](reports/final-results.md)。
+```sh
+git submodule update --init --recursive
+make JOBS=4
+```
+
+生成的程序为 `build/release/fasteztq-dump`。ncbi-vdb 从子模块源码编译并静态链接；libdeflate 和 ISA-L 通过 pkg-config 查找，使用安装环境提供的库。安装到自定义位置的压缩库可通过 `PKG_CONFIG_PATH` 指定，运行时共享库搜索路径按安装环境配置。
+
+`CC`、`CXX`、`CFLAGS`、`CPPFLAGS`、`LDFLAGS` 和 `VDB_FLAGS` 用于指定编译配置，`BUILD` 指定构建目录，`JOBS` 指定依赖库的构建并行度。不同配置使用独立构建目录：
+
+```sh
+make BUILD=build/debug CFLAGS='-O0 -g' VDB_FLAGS='-O0 -g' JOBS=4
+make install PREFIX="$HOME/.local"
+```
+
+安装支持 `PREFIX`、`BINDIR` 和 `DESTDIR`。
+
+## 使用
+
+```sh
+build/release/fasteztq-dump reads.sra -O fastq -e 4 --level 6
+```
+
+| 参数 | 含义 |
+|---|---|
+| `-O`、`--outdir` | 输出目录，默认当前目录 |
+| `-e`、`--threads` | 线程数，默认 8 |
+| `-l`、`--level` | 压缩级别，libdeflate 为 0–12，默认 6；ISA-L 为 0-3，默认 1 |
+| `--compressor` | `libdeflate` 或 `isal` |
+| `-h`、`--help` | 显示帮助 |
+| `-v`、`--version` | 显示程序和解码库版本 |
+
+输出行为与 [sra-tools](https://github.com/ncbi/sra-tools) 中的 `fasterq-dump --split-files`一致。单读段 spot 写入 `reads.fastq.gz`，双读段分别写入 `reads_1.fastq.gz`、`reads_2.fastq.gz`。混合布局按各 spot 的读段数量分流，各流保留 spot 顺序。输出名取输入路径的文件名，并去掉 `.sra` 或 `.sralite` 后缀。
+
+FASTQ 头部和加号行包含输入名称、spot id 和读长。输入提供 NAME 列时加入该值，空 NAME 使用 spot id。质量由 VDB schema 解码，以 Phred+33 表示，Q≥93 编码为 `~`。Lite 的质量恢复遵循其 schema。
+
+## 测试
+
+```sh
+make check JOBS=4
+```
+
+测试现场生成小型 SRA 归档，并将解压后的 FASTQ 与测试记录定义的预期内容比较。覆盖单读段、双读段、混合布局、名称、质量边界、Lite 质量恢复、跨块顺序、压缩级别、索引映射，以及异常输入和写入失败清理。测试数据和结果存放在 Python 临时目录中，位置可通过 `TMPDIR` 指定，测试结束后清理。
+
+模块说明见 [ARCHITECTURE.md](ARCHITECTURE.md)。
