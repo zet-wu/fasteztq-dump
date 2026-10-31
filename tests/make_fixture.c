@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
 /* Development-only small VDB fixture generator. */
 #include <vdb/manager.h>
 #include <vdb/schema.h>

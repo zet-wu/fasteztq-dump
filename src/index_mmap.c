@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
 /* Share immutable on-disk index mappings, not cursor/decompression state. */
 #include "index_mmap.h"
 #include <kfs/file-impl.h>

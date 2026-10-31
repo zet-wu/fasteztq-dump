@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
 #ifndef FASTEZTQ_READER_H
 #define FASTEZTQ_READER_H
 #include <stdbool.h>

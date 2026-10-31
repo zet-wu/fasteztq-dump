@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
 #include "gzip.h"
 #include "common.h"
 #include <igzip_lib.h>

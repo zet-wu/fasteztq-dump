@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 ifeq ($(origin CC),default)
 CC = gcc
 endif

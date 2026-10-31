@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Small SRA integration cases for layout, boundaries, names, and I/O failures."""
 import argparse
 import gzip

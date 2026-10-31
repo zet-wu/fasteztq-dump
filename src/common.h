@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
 #ifndef FASTEZTQ_COMMON_H
 #define FASTEZTQ_COMMON_H
 #include <stddef.h>

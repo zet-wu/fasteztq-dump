@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
 #ifndef FASTEZTQ_INDEX_MMAP_H
 #define FASTEZTQ_INDEX_MMAP_H
 #include <kfs/file.h>
