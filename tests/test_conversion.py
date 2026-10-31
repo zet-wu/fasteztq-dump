@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 BUILD = ROOT / 'build/release'
 
 
-def expected(mode, accession, rows):
+def expected(mode, accession, rows, compression="gzip"):
     streams = {}
     for row in range(1, rows + 1):
         count = 1 if mode == 'single' else 1 + row % 2 if mode == 'mixed' else 2
@@ -25,7 +25,7 @@ def expected(mode, accession, rows):
         offset = 0
         for i, length in enumerate(lengths):
             suffix = '' if count == 1 else f'_{i + 1}'
-            dest = streams.setdefault(accession + suffix + '.fastq.gz', bytearray())
+            dest = streams.setdefault(accession + suffix + ('.fastq.gz' if compression == 'gzip' else '.fastq'), bytearray())
             name = '' if mode == 'no-name' else (f' instrument:{row}' if row % 7 else f' {row}')
             header = f'{accession}.{row}{name} length={length}\n'.encode()
             read_quality = bytes([36 if (row + i) % 2 else 63]) * length if mode == 'lite' else quality[offset:offset + length]
@@ -55,18 +55,19 @@ class ConversionTests(unittest.TestCase):
     def check_output(self, directory, truth):
         self.assertEqual({p.name for p in directory.iterdir()}, truth.keys())
         for name, content in truth.items():
-            with gzip.open(directory / name, 'rb') as stream:
+            with (gzip.open(directory / name, 'rb') if name.endswith('.gz') else open(directory / name, 'rb')) as stream:
                 self.assertEqual(stream.read(), content, name)
 
     def test_layouts_and_quality(self):
         for mode in ['single', 'paired', 'mixed', 'fixed', 'no-name', 'database', 'lite']:
             source = self.fixture(mode)
-            for threads in [1, 2, 9]:
-                with self.subTest(mode=mode, threads=threads):
-                    dest = self.tmp / f'{mode}-{threads}'
-                    result = self.convert(source, dest, '-e', threads)
-                    self.assertEqual(result.returncode, 0, result.stderr.decode())
-                    self.check_output(dest, expected(mode, mode, 17))
+            for compression in ['gzip', 'none']:
+                for threads in [1, 2, 9]:
+                    with self.subTest(mode=mode, threads=threads):
+                        dest = self.tmp / f'{mode}-{threads}-{compression}'
+                        result = self.convert(source, dest, '--compression', compression, '-e', threads)
+                        self.assertEqual(result.returncode, 0, result.stderr.decode())
+                        self.check_output(dest, expected(mode, mode, 17, compression))
 
     def test_chunk_order_and_gzip_members(self):
         rows = 2 * 16384 + 3
@@ -87,6 +88,29 @@ class ConversionTests(unittest.TestCase):
                             remaining = decoder.unused_data
                             members += 1
                         self.assertEqual(members, 3)
+
+    def test_plain_chunk_order(self):
+        rows = 2 * 16384 + 3
+        source = self.fixture('mixed', rows)
+        for threads in [1, 2, 9]:
+            with self.subTest(threads=threads):
+                dest = self.tmp / f'plain-{threads}'
+                result = self.convert(source, dest, '-e', threads, '--compression', 'none')
+                self.assertEqual(result.returncode, 0, result.stderr.decode())
+                self.assertIn(b'compression=none', result.stderr)
+                self.assertNotIn(b'compressor=', result.stderr)
+                self.check_output(dest, expected('mixed', 'mixed', rows, 'none'))
+
+    def test_compression_option_conflicts(self):
+        source = self.fixture()
+        for setting in [('--compressor', 'libdeflate'), ('--compressor', 'isal'), ('--level', '0')]:
+            for options in [('--compression', 'none', *setting), (*setting, '--compression', 'none')]:
+                with self.subTest(options=options):
+                    dest = self.tmp / 'out'
+                    result = self.convert(source, dest, *options)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn(b'require --compression gzip', result.stderr)
+                    self.assertFalse(dest.exists())
 
     def test_default_compression_levels(self):
         source = self.fixture()
@@ -123,28 +147,30 @@ class ConversionTests(unittest.TestCase):
 
     def test_existing_output(self):
         source = self.fixture()
-        dest = self.tmp / 'out'
-        dest.mkdir()
-        existing = dest / 'paired_2.fastq.gz'
-        existing.write_bytes(b'previous result')
-        result = self.convert(source, dest)
-        self.assertNotEqual(result.returncode, 0)
-        self.assertIn(b'already exists', result.stderr)
-        self.assertEqual(list(dest.iterdir()), [existing])
-        self.assertEqual(existing.read_bytes(), b'previous result')
+        for compression in ['gzip', 'none']:
+            dest = self.tmp / compression
+            dest.mkdir()
+            existing = dest / ('paired_2.fastq.gz' if compression == 'gzip' else 'paired_2.fastq')
+            existing.write_bytes(b'previous result')
+            result = self.convert(source, dest, '--compression', compression)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn(b'already exists', result.stderr)
+            self.assertEqual(list(dest.iterdir()), [existing])
+            self.assertEqual(existing.read_bytes(), b'previous result')
 
     def test_invalid_layout_cleanup(self):
         for mode, message in [('technical', b'unsupported'), ('empty', b'unsupported'),
                               ('three', b'supported layout'), ('bad-quality', b'lengths disagree'),
                               ('reference', b'unsupported table')]:
             source = self.fixture(mode, 16385)
-            for threads in [1, 2, 9]:
-                with self.subTest(mode=mode, threads=threads):
-                    dest = self.tmp / f'{mode}-{threads}'
-                    result = self.convert(source, dest, '-e', threads)
-                    self.assertNotEqual(result.returncode, 0)
-                    self.assertIn(message, result.stderr)
-                    self.assertEqual(list(dest.iterdir()), [])
+            for compression in ['gzip', 'none']:
+                for threads in [1, 2, 9]:
+                    with self.subTest(mode=mode, threads=threads):
+                        dest = self.tmp / f'{mode}-{threads}-{compression}'
+                        result = self.convert(source, dest, '--compression', compression, '-e', threads)
+                        self.assertNotEqual(result.returncode, 0)
+                        self.assertIn(message, result.stderr)
+                        self.assertEqual(list(dest.iterdir()), [])
 
     def test_archive_errors(self):
         source = self.fixture()
@@ -160,12 +186,13 @@ class ConversionTests(unittest.TestCase):
 
     def test_write_failure_cleanup(self):
         source = self.fixture()
-        dest = self.tmp / 'out'
-        env = dict(os.environ, LD_PRELOAD=str(BUILD / 'fail_write.so'))
-        result = self.convert(source, dest, '-e', 1, env=env)
-        self.assertNotEqual(result.returncode, 0)
-        self.assertIn(b'write output', result.stderr)
-        self.assertEqual(list(dest.iterdir()), [])
+        for compression in ['gzip', 'none']:
+            dest = self.tmp / compression
+            env = dict(os.environ, LD_PRELOAD=str(BUILD / 'fail_write.so'))
+            result = self.convert(source, dest, '--compression', compression, '-e', 1, env=env)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn(b'write output', result.stderr)
+            self.assertEqual(list(dest.iterdir()), [])
 
     def test_suffix_and_symlink_naming(self):
         source = self.fixture()
@@ -173,15 +200,16 @@ class ConversionTests(unittest.TestCase):
         shutil.copyfile(source, renamed)
         alias = self.tmp / 'alias.sra'
         alias.symlink_to(source)
-        for path, accession in [(renamed, 'renamed'), (alias, 'alias')]:
-            dest = self.tmp / (accession + '-out')
-            result = self.convert(path, dest, '-e', 1)
-            self.assertEqual(result.returncode, 0, result.stderr.decode())
-            self.check_output(dest, expected('paired', accession, 17))
+        for compression in ['gzip', 'none']:
+            for path, accession in [(renamed, 'renamed'), (alias, 'alias')]:
+                dest = self.tmp / (accession + '-' + compression)
+                result = self.convert(path, dest, '--compression', compression, '-e', 1)
+                self.assertEqual(result.returncode, 0, result.stderr.decode())
+                self.check_output(dest, expected('paired', accession, 17, compression))
 
     def test_invalid_options(self):
         source = self.fixture()
-        for options in [('--level', 13), ('--level', -1), ('--compressor', 'unknown'),
+        for options in [('--compression', 'unknown'), ('--level', 13), ('--level', -1), ('--compressor', 'unknown'),
                         ('--compressor', 'isal', '--level', 4),
                         ('-e', 0), ('-e', -1), ('-e', 'abc'), ('-e', 2**32)]:
             with self.subTest(options=options):
