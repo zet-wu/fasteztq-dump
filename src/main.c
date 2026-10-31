@@ -37,6 +37,7 @@ static struct {
     int64_t first;
     uint64_t count, chunks;
     unsigned workers;
+    bool gzip;
     pthread_mutex_t mutex;
     pthread_cond_t cond;
 } state = {.mutex = PTHREAD_MUTEX_INITIALIZER, .cond = PTHREAD_COND_INITIALIZER};
@@ -140,6 +141,7 @@ static void process(Worker *w, uint64_t chunk) {
         reader_spot(w->reader, row, &s);
         format(w, row, &s);
     }
+    if (!state.gzip) return;
     for (int i = 0; i < STREAMS; ++i) {
         Buffer *raw = &w->raw[i], *zip = &w->compressed[i];
         if (!raw->len) continue;
@@ -165,7 +167,7 @@ static void *work(void *arg) {
 }
 static void write_chunk(Worker *w) {
     for (int i = 0; i < STREAMS; ++i) {
-        Buffer *b = &w->compressed[i];
+        Buffer *b = state.gzip ? &w->compressed[i] : &w->raw[i];
         if (!b->len) continue;
         if (output[i].fd < 0) {
             int n = snprintf(output[i].temp, PATH_MAX, "%s/.%s.%d.XXXXXX", state.outdir, state.accession, i);
@@ -192,7 +194,8 @@ static unsigned number(const char *s, unsigned lo, unsigned hi, const char *labe
 static void on_signal(int sig) { interrupted = sig; }
 static void usage(void) {
     puts("Usage: fasteztq-dump LOCAL_SRA -O OUTPUT_DIR [-e THREADS] [-l LEVEL]\n"
-         "Direct ordered gzip FASTQ from a local SRA archive.\n"
+         "Direct ordered FASTQ from a local SRA archive.\n"
+         "Output: --compression gzip (default) or none.\n"
          "Threads: positive integer, default 8 (includes main writer).\n"
          "Compression: --compressor libdeflate (default), -l/--level 0..12 (default 6).\n"
          "Optional --compressor isal uses levels 0..3 (default 1). Existing outputs are preserved.");
@@ -200,17 +203,24 @@ static void usage(void) {
 int main(int argc, char **argv) {
     unsigned threads = 8, level = 6;
     GzipBackend backend = GZIP_LIBDEFLATE;
-    bool level_given = false;
+    bool level_given = false, compressor_given = false;
+    state.gzip = true;
     state.outdir = ".";
     static const struct option opts[] = {{"threads",1,NULL,'e'},{"outdir",1,NULL,'O'},
-        {"level",1,NULL,'l'},{"compressor",1,NULL,'c'},{"help",0,NULL,'h'},{"version",0,NULL,'v'},{NULL,0,NULL,0}};
+        {"compression",1,NULL,'z'},{"level",1,NULL,'l'},{"compressor",1,NULL,'c'},{"help",0,NULL,'h'},{"version",0,NULL,'v'},{NULL,0,NULL,0}};
     int c;
     while ((c = getopt_long(argc, argv, "e:O:l:hv", opts, NULL)) != -1) {
         switch (c) {
         case 'e': threads = number(optarg, 1, UINT_MAX, "threads"); break;
         case 'O': state.outdir = optarg; break;
         case 'l': level = number(optarg, 0, 12, "level"); level_given = true; break;
+        case 'z':
+            if (!strcmp(optarg, "gzip")) state.gzip = true;
+            else if (!strcmp(optarg, "none")) state.gzip = false;
+            else fail("compression must be gzip or none");
+            break;
         case 'c':
+            compressor_given = true;
             if (!strcmp(optarg, "libdeflate")) backend = GZIP_LIBDEFLATE;
             else if (!strcmp(optarg, "isal")) backend = GZIP_ISAL;
             else fail("compressor must be libdeflate or isal");
@@ -221,6 +231,8 @@ int main(int argc, char **argv) {
         }
     }
     if (optind + 1 != argc) { usage(); return 2; }
+    if (!state.gzip && (compressor_given || level_given))
+        fail("--compressor and --level require --compression gzip");
     if (!level_given) level = backend == GZIP_ISAL ? 1 : 6;
     if (backend == GZIP_ISAL && level > 3) fail("ISA-L level must be 0..3");
     struct stat st;
@@ -239,7 +251,7 @@ int main(int argc, char **argv) {
         output[i].fd = -1;
         char suffix[16] = "";
         if (i) snprintf(suffix, sizeof suffix, "_%d", i);
-        int written = snprintf(output[i].final, PATH_MAX, "%s/%s%s.fastq.gz", state.outdir, state.accession, suffix);
+        int written = snprintf(output[i].final, PATH_MAX, "%s/%s%s.fastq%s", state.outdir, state.accession, suffix, state.gzip ? ".gz" : "");
         if (written < 0 || written >= PATH_MAX) fail("output path too long");
         if (lstat(output[i].final, &st) == 0) fail("output already exists: %s", output[i].final);
         if (errno != ENOENT) fail("inspect output: %s", strerror(errno));
@@ -254,7 +266,7 @@ int main(int argc, char **argv) {
     for (unsigned i = 0; i < state.workers; ++i) {
         workers[i].reader = reader_open(path, i ? workers[0].reader : NULL);
         workers[i].index = i;
-        workers[i].compressor = gzip_new(backend, level);
+        if (state.gzip) workers[i].compressor = gzip_new(backend, level);
     }
     reader_range(workers[0].reader, &state.first, &state.count);
     if (state.first < 1 || state.count > INT64_MAX - (uint64_t)state.first) fail("invalid spot range");
@@ -286,7 +298,7 @@ int main(int argc, char **argv) {
     for (unsigned i = 0; i < state.workers; ++i) {
         if (!compute_main || i) pthread_join(tids[i], NULL);
         reader_close(workers[i].reader);
-        gzip_free(workers[i].compressor);
+        if (state.gzip) gzip_free(workers[i].compressor);
         for (int s = 0; s < STREAMS; ++s) { free(workers[i].raw[s].data); free(workers[i].compressed[s].data); }
     }
     if (atomic_load(&failed)) return 1;
@@ -298,8 +310,11 @@ int main(int argc, char **argv) {
         if (unlink(output[i].temp)) fail("remove temporary link: %s", strerror(errno));
     }
     complete = true;
-    fprintf(stderr, "spots=%llu threads=%u compressor=%s level=%u\n",
-            (unsigned long long)state.count, threads, backend == GZIP_LIBDEFLATE ? "libdeflate" : "isal", level);
+    fprintf(stderr, "spots=%llu threads=%u compression=%s",
+            (unsigned long long)state.count, threads, state.gzip ? "gzip" : "none");
+    if (state.gzip) fprintf(stderr, " compressor=%s level=%u",
+                            backend == GZIP_LIBDEFLATE ? "libdeflate" : "isal", level);
+    fputc('\n', stderr);
     free(workers); free(tids); free(path); free(state.accession);
     return 0;
 }
