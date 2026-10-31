@@ -88,15 +88,38 @@ class ConversionTests(unittest.TestCase):
                             members += 1
                         self.assertEqual(members, 3)
 
+    def test_default_compression_levels(self):
+        source = self.fixture()
+        cases = [([], 'libdeflate', 6),
+                 (['--compressor', 'libdeflate'], 'libdeflate', 6),
+                 (['--compressor', 'isal'], 'isal', 1),
+                 (['--compressor', 'libdeflate', '--compressor', 'isal'], 'isal', 1),
+                 (['--compressor', 'isal', '--compressor', 'libdeflate'], 'libdeflate', 6)]
+        for index, (options, backend, level) in enumerate(cases):
+            with self.subTest(options=options):
+                dest = self.tmp / f'default-{index}'
+                reference = self.tmp / f'explicit-{index}'
+                result = self.convert(source, dest, '-e', 1, *options)
+                self.assertEqual(result.returncode, 0, result.stderr.decode())
+                self.assertIn(f'compressor={backend} level={level}'.encode(), result.stderr)
+                self.check_output(dest, expected('paired', 'paired', 17))
+                explicit = self.convert(source, reference, '-e', 1, '--compressor', backend, '--level', level)
+                self.assertEqual(explicit.returncode, 0, explicit.stderr.decode())
+                for path in dest.iterdir():
+                    self.assertEqual(path.read_bytes(), (reference / path.name).read_bytes())
+
     def test_compression_levels(self):
         source = self.fixture()
         for backend, levels in [('libdeflate', [0, 1, 6, 12]), ('isal', [0, 1, 2, 3])]:
             for level in levels:
-                with self.subTest(backend=backend, level=level):
-                    dest = self.tmp / f'{backend}-{level}'
-                    result = self.convert(source, dest, '-e', 1, '--compressor', backend, '--level', level)
-                    self.assertEqual(result.returncode, 0, result.stderr.decode())
-                    self.check_output(dest, expected('paired', 'paired', 17))
+                for level_first in [False, True]:
+                    with self.subTest(backend=backend, level=level, level_first=level_first):
+                        dest = self.tmp / f'{backend}-{level}-{level_first}'
+                        options = ['--level', level, '--compressor', backend] if level_first else ['--compressor', backend, '--level', level]
+                        result = self.convert(source, dest, '-e', 1, *options)
+                        self.assertEqual(result.returncode, 0, result.stderr.decode())
+                        self.assertIn(f'compressor={backend} level={level}'.encode(), result.stderr)
+                        self.check_output(dest, expected('paired', 'paired', 17))
 
     def test_existing_output(self):
         source = self.fixture()
@@ -159,7 +182,7 @@ class ConversionTests(unittest.TestCase):
     def test_invalid_options(self):
         source = self.fixture()
         for options in [('--level', 13), ('--level', -1), ('--compressor', 'unknown'),
-                        ('--compressor', 'isal'), ('--compressor', 'isal', '--level', 4),
+                        ('--compressor', 'isal', '--level', 4),
                         ('-e', 0), ('-e', -1), ('-e', 'abc'), ('-e', 2**32)]:
             with self.subTest(options=options):
                 dest = self.tmp / 'out'

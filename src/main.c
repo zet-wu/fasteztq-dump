@@ -195,7 +195,7 @@ static void usage(void) {
          "Direct ordered gzip FASTQ from a local SRA archive.\n"
          "Threads: positive integer, default 8 (includes main writer).\n"
          "Compression: --compressor libdeflate (default), -l/--level 0..12 (default 6).\n"
-         "Optional --compressor isal requires an explicit level 0..3. Existing outputs are preserved.");
+         "Optional --compressor isal uses levels 0..3 (default 1). Existing outputs are preserved.");
 }
 int main(int argc, char **argv) {
     unsigned threads = 8, level = 6;
@@ -221,7 +221,8 @@ int main(int argc, char **argv) {
         }
     }
     if (optind + 1 != argc) { usage(); return 2; }
-    if (backend == GZIP_ISAL && (!level_given || level > 3)) fail("ISA-L requires an explicit --level 0..3");
+    if (!level_given) level = backend == GZIP_ISAL ? 1 : 6;
+    if (backend == GZIP_ISAL && level > 3) fail("ISA-L level must be 0..3");
     struct stat st;
     if (stat(argv[optind], &st) || !S_ISREG(st.st_mode)) fail("input must be an existing local SRA archive");
     char *path = realpath(argv[optind], NULL);
