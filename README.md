@@ -2,7 +2,7 @@
 
 [English](README_en.md)
 
-更快的 SRA 转换为 gzip FASTQ 的命令行工具，支持多线程。仅支持由 FASTQ 打包得到的 Normalized、Lite SRA 输入，每个 spot 含一条或两条非空生物学读段的布局。
+更快的 SRA 转换为 FASTQ 的命令行工具，支持多线程，支持原始 FASTQ 和 gzip 压缩输出。仅支持由 FASTQ 打包得到的 Normalized、Lite SRA 输入，每个 spot 含一条或两条非空生物学读段的布局。
 
 ## 构建
 
@@ -66,11 +66,20 @@ build/release/fasteztq-dump reads.sra -O fastq -e 4 --level 6
 | `-O`、`--outdir` | 输出目录，默认当前目录 |
 | `-e`、`--threads` | 线程数，默认 8 |
 | `-l`、`--level` | 压缩级别，libdeflate 为 0–12，默认 6；ISA-L 为 0-3，默认 1 |
-| `--compressor` | `libdeflate` 或 `isal` |
+| `--compression` | 输出模式：`gzip`（默认）或 `none`（原始 FASTQ） |
+| `--compressor` | gzip 压缩实现：`libdeflate`（默认）或 `isal` |
 | `-h`、`--help` | 显示帮助 |
 | `-v`、`--version` | 显示程序和解码库版本 |
 
-输出行为与 [sra-tools](https://github.com/ncbi/sra-tools) 中的 `fasterq-dump --split-files`一致。单读段 spot 写入 `reads.fastq.gz`，双读段分别写入 `reads_1.fastq.gz`、`reads_2.fastq.gz`。混合布局按各 spot 的读段数量分流，各流保留 spot 顺序。输出名取输入路径的文件名，并去掉 `.sra` 或 `.sralite` 后缀。
+输出原始 FASTQ：
+
+```sh
+build/release/fasteztq-dump reads.sra -O fastq -e 4 --compression none
+```
+
+`--compressor` 和 `--level` 用于 `gzip` 模式；与 `--compression none` 同用时报告参数冲突。
+
+输出行为与 [sra-tools](https://github.com/ncbi/sra-tools) 中的 `fasterq-dump --split-files`一致。单读段 spot 写入 `reads.fastq.gz`，双读段分别写入 `reads_1.fastq.gz`、`reads_2.fastq.gz`。`none` 模式对应文件名为 `reads.fastq`、`reads_1.fastq`、`reads_2.fastq`。混合布局按各 spot 的读段数量分流，各流保留 spot 顺序。输出名取输入路径的文件名，并去掉 `.sra` 或 `.sralite` 后缀。
 
 FASTQ 头部和加号行包含输入名称、spot id 和读长。输入提供 NAME 列时加入该值，空 NAME 使用 spot id。质量由 VDB schema 解码，以 Phred+33 表示，Q≥93 编码为 `~`。Lite 的质量恢复遵循其 schema。
 
@@ -80,6 +89,6 @@ FASTQ 头部和加号行包含输入名称、spot id 和读长。输入提供 NA
 make check JOBS=4
 ```
 
-测试现场生成小型 SRA 归档，并将解压后的 FASTQ 与测试记录定义的预期内容比较。覆盖单读段、双读段、混合布局、名称、质量边界、Lite 质量恢复、跨块顺序、压缩级别、索引映射，以及异常输入和写入失败清理。测试数据和结果存放在 Python 临时目录中，位置可通过 `TMPDIR` 指定，测试结束后清理。
+测试现场生成小型 SRA 归档，并将原始 FASTQ 和 gzip 解压后的内容与测试记录定义的预期内容比较。覆盖单读段、双读段、混合布局、名称、质量边界、Lite 质量恢复、跨块顺序、输出模式与参数组合、压缩级别、索引映射，以及异常输入和写入失败清理。测试数据和结果存放在 Python 临时目录中，位置可通过 `TMPDIR` 指定，测试结束后清理。
 
 模块说明见 [ARCHITECTURE.md](ARCHITECTURE.md)。
