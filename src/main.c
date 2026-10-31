@@ -16,7 +16,6 @@
 #include <limits.h>
 #include <sys/stat.h>
 #include <signal.h>
-#include <malloc.h>
 #include <stdatomic.h>
 
 #define MIB (1024UL * 1024)
@@ -193,8 +192,8 @@ static unsigned number(const char *s, unsigned lo, unsigned hi, const char *labe
 static void on_signal(int sig) { interrupted = sig; }
 static void usage(void) {
     puts("Usage: fasteztq-dump LOCAL_SRA -O OUTPUT_DIR [-e THREADS] [-l LEVEL]\n"
-         "Direct ordered gzip FASTQ, matching fasterq-dump 3.2.1 --split-files.\n"
-         "Threads: 1..64, default 8 (includes main writer).\n"
+         "Direct ordered gzip FASTQ from a local SRA archive.\n"
+         "Threads: positive integer, default 8 (includes main writer).\n"
          "Compression: --compressor libdeflate (default), -l/--level 0..12 (default 6).\n"
          "Optional --compressor isal requires an explicit level 0..3. Existing outputs are preserved.");
 }
@@ -208,7 +207,7 @@ int main(int argc, char **argv) {
     int c;
     while ((c = getopt_long(argc, argv, "e:O:l:hv", opts, NULL)) != -1) {
         switch (c) {
-        case 'e': threads = number(optarg, 1, 64, "threads"); break;
+        case 'e': threads = number(optarg, 1, UINT_MAX, "threads"); break;
         case 'O': state.outdir = optarg; break;
         case 'l': level = number(optarg, 0, 12, "level"); level_given = true; break;
         case 'c':
@@ -217,7 +216,7 @@ int main(int argc, char **argv) {
             else fail("compressor must be libdeflate or isal");
             break;
         case 'h': usage(); return 0;
-        case 'v': puts("fasteztq-dump 0.4.0; ncbi-vdb 3.2.1; libdeflate 1.22; ISA-L 2.31.0"); return 0;
+        case 'v': puts("fasteztq-dump 0.4.0; ncbi-vdb 3.2.1"); return 0;
         default: return 2;
         }
     }
@@ -227,7 +226,6 @@ int main(int argc, char **argv) {
     if (stat(argv[optind], &st) || !S_ISREG(st.st_mode)) fail("input must be an existing local SRA archive");
     char *path = realpath(argv[optind], NULL);
     if (!path) fail("resolve input: %s", strerror(errno));
-    mallopt(M_ARENA_MAX, threads < 16 ? threads : 16);
     if (mkdir(state.outdir, 0777) && errno != EEXIST) fail("create output directory: %s", strerror(errno));
     const char *input_name = strrchr(argv[optind], '/');
     state.accession = strdup(input_name ? input_name + 1 : argv[optind]);
