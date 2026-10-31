@@ -1,0 +1,43 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout source and ncbi-vdb
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake pkg-config libdeflate-dev libisal-dev python3
+
+      - name: Build and test
+        run: make check JOBS=4
+
+      - name: Package binary and source
+        run: |
+          package=fasteztq-dump-linux-x86_64-ubuntu24.04
+          mkdir -p "dist/$package"
+          install -m 755 build/release/fasteztq-dump "dist/$package/"
+          git ls-files --recurse-submodules -z | tar -czf dist/fasteztq-dump-source.tar.gz --null -T -
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$RELEASE_TAG" dist/fasteztq-dump-source.tar.gz dist/$package/fasteztq-dump \
+            --verify-tag --title "$RELEASE_TAG" --generate-notes
