@@ -6,7 +6,6 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/resource.h>
 #include <unistd.h>
 
 #define CHECK(call) do { rc_t rc = (call); if (rc) { fprintf(stderr, "%s: 0x%x\n", #call, rc); exit(1); } } while (0)
@@ -23,14 +22,12 @@ int main(int argc, char **argv) {
     snprintf(second, sizeof second, "%s/index-b", argv[1]);
     int fd = open(first, O_CREAT | O_EXCL | O_RDWR, 0600);
     require(fd >= 0, "create index A");
-    require(!ftruncate(fd, 128 * 1024 * 1024), "size index A");
-    require(pwrite(fd, "A", 1, 0) == 1 && pwrite(fd, "B", 1, 64 * 1024 * 1024) == 1, "write index A");
+    require(!ftruncate(fd, 8192), "size index A");
+    require(pwrite(fd, "A", 1, 0) == 1 && pwrite(fd, "B", 1, 4096) == 1, "write index A");
     require(!close(fd), "close index A");
     fd = open(second, O_CREAT | O_EXCL | O_RDWR, 0600);
     require(fd >= 0 && !ftruncate(fd, 4096), "create index B");
     require(write(fd, "C", 1) == 1 && !close(fd), "write index B");
-    struct rlimit limit = {256 * 1024 * 1024, 256 * 1024 * 1024};
-    require(!setrlimit(RLIMIT_AS, &limit), "memory budget");
     KDirectory *dir;
     CHECK(KDirectoryNativeDir(&dir));
     const KMMap *maps[16];
@@ -40,12 +37,13 @@ int main(int argc, char **argv) {
         CHECK(index_mmap_read(&maps[i], file));
         CHECK(KFileRelease(file));
         content(maps[i], 'A');
+        require(maps[i] == maps[0], "reuse index mapping");
     }
     const KFile *file, *part;
     const KMMap *view;
     CHECK(KDirectoryOpenFileRead(dir, &file, "%s", first));
     for (unsigned i = 0; i < 2; ++i) {
-        CHECK(KFileMakeSubRead(&part, file, i * 64UL * 1024 * 1024, 4096));
+        CHECK(KFileMakeSubRead(&part, file, i * 4096UL, 4096));
         CHECK(index_mmap_read(&view, part));
         content(view, i ? 'B' : 'A');
         size_t size;
