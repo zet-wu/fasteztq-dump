@@ -1,9 +1,12 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Version tag to use or create, e.g. v0.4.1'
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -15,8 +18,25 @@ jobs:
       - name: Checkout source and ncbi-vdb
         uses: actions/checkout@v6
         with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
           submodules: recursive
           persist-credentials: false
+
+      - name: Select release source
+        id: source
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          git check-ref-format "refs/tags/$RELEASE_TAG"
+          if git show-ref --verify --quiet "refs/tags/$RELEASE_TAG"; then
+            git checkout --detach "refs/tags/$RELEASE_TAG"
+            git submodule update --init --recursive
+          else
+            status=$?
+            if [ "$status" -ne 1 ]; then exit "$status"; fi
+          fi
+          printf 'commit=%s\n' "$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Install build dependencies
         run: |
@@ -26,18 +46,18 @@ jobs:
       - name: Build and test
         run: make check JOBS=4
 
-      - name: Package binary and source
+      - name: Prepare binary and source
         run: |
-          package=fasteztq-dump-linux-x86_64-ubuntu24.04
-          mkdir -p "dist/$package"
-          install -m 755 build/release/fasteztq-dump "dist/$package/"
+          mkdir -p dist
+          install -m 755 build/release/fasteztq-dump dist/fasteztq-dump-linux-x86_64-ubuntu24.04
           git ls-files --recurse-submodules -z | tar -czf dist/fasteztq-dump-source.tar.gz --null -T -
 
-      - name: Publish release
+      - name: Create draft release
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          RELEASE_COMMIT: ${{ steps.source.outputs.commit }}
         run: |
-          gh release create "$RELEASE_TAG" dist/fasteztq-dump-source.tar.gz dist/$package/fasteztq-dump \
-            --verify-tag --title "$RELEASE_TAG" --generate-notes
+          gh release create "$RELEASE_TAG" dist/fasteztq-dump-source.tar.gz dist/fasteztq-dump-linux-x86_64-ubuntu24.04 \
+            --draft --target "$RELEASE_COMMIT" --title "$RELEASE_TAG" --generate-notes
