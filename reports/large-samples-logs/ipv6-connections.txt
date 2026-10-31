@@ -1,8 +1,0 @@
-ESTAB      0      0      [2001:da8:d800:356:a4ef:1e3a:da9f:aecd]:41061 [2600:1f60:8080:1::100f:ed56]:443   users:(("aria2c",pid=324823,fd=17))         
-ESTAB      0      0      [2001:da8:d800:356:a4ef:1e3a:da9f:aecd]:33983 [2600:1f60:80a0:1::100f:f59f]:443   users:(("aria2c",pid=324822,fd=14))         
-ESTAB      0      0      [2001:da8:d800:356:a4ef:1e3a:da9f:aecd]:43183 [2600:1f60:8080:1::100f:ed56]:443   users:(("aria2c",pid=324823,fd=7))          
-ESTAB      0      0      [2001:da8:d800:356:a4ef:1e3a:da9f:aecd]:37031 [2600:1f60:80a0:1::100f:f59f]:443   users:(("aria2c",pid=324822,fd=8))          
-ESTAB      0      0      [2001:da8:d800:356:a4ef:1e3a:da9f:aecd]:38221 [2600:1f60:80a0:1::100f:f59f]:443   users:(("aria2c",pid=324822,fd=6))          
-ESTAB      0      0      [2001:da8:d800:356:a4ef:1e3a:da9f:aecd]:42535 [2600:1f60:80a0:1::100f:f59f]:443   users:(("aria2c",pid=324822,fd=20))         
-ESTAB      0      0      [2001:da8:d800:356:a4ef:1e3a:da9f:aecd]:46083 [2600:1f60:8080:1::100f:ed56]:443   users:(("aria2c",pid=324823,fd=13))         
-ESTAB      0      0      [2001:da8:d800:356:a4ef:1e3a:da9f:aecd]:37751 [2600:1f60:8080:1::100f:ed56]:443   users:(("aria2c",pid=324823,fd=11))         
